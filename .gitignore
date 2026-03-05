@@ -1,0 +1,15 @@
+.DS_Store
+.env
+.env.*
+/node_modules/
+
+# React Router
+/.react-router/
+/build/
+
+# Editor
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
