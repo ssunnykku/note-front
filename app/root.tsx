@@ -5,23 +5,23 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
-} from "react-router";
+} from 'react-router';
 
-import type { Route } from "./+types/root";
-import NotFoundPage from "~/features/error/NotFoundPage";
-import ErrorPage from "~/features/error/Error";
-import "./app.css";
+import type { Route } from './+types/root';
+import NotFoundPage from '~/features/error/NotFoundPage';
+import ErrorPage from '~/features/error/Error';
+import './app.css';
 
 export const links: Route.LinksFunction = () => [
-  { rel: "preconnect", href: "https://fonts.googleapis.com" },
+  { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
   {
-    rel: "preconnect",
-    href: "https://fonts.gstatic.com",
-    crossOrigin: "anonymous",
+    rel: 'preconnect',
+    href: 'https://fonts.gstatic.com',
+    crossOrigin: 'anonymous',
   },
   {
-    rel: "stylesheet",
-    href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+    rel: 'stylesheet',
+    href: 'https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap',
   },
 ];
 
@@ -52,7 +52,7 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
     return <NotFoundPage />;
   }
 
-  let details = "예상하지 못한 오류가 발생했습니다.";
+  let details = '예상하지 못한 오류가 발생했습니다.';
   let stack: string | undefined;
 
   if (isRouteErrorResponse(error)) {

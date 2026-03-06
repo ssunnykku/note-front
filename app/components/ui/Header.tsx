@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+import { Link } from 'react-router';
 
 const Header = () => {
   return (
@@ -7,9 +7,7 @@ const Header = () => {
         <Link to="/" className="text-lg font-semibold text-gray-900 dark:text-white">
           Note
         </Link>
-        <nav className="flex items-center gap-4">
-          {/* 네비게이션 링크 슬롯 */}
-        </nav>
+        <nav className="flex items-center gap-4">{/* 네비게이션 링크 슬롯 */}</nav>
       </div>
     </header>
   );
