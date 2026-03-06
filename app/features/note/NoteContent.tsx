@@ -1,3 +1,4 @@
+import Markdown from 'react-markdown';
 import type { Note } from './types';
 
 interface NoteContentProps {
@@ -19,8 +20,8 @@ const NoteContent = ({ note }: NoteContentProps) => {
       <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
         마지막 수정: {note.updatedAt}
       </p>
-      <div className="mt-8 whitespace-pre-wrap text-base leading-relaxed text-gray-700 dark:text-gray-300">
-        {note.content}
+      <div className="prose dark:prose-invert mt-8 max-w-none">
+        <Markdown>{note.content}</Markdown>
       </div>
     </article>
   );
