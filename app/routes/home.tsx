@@ -30,6 +30,19 @@ export default function Home() {
     console.log('노트 저장됨:', { noteId, title, content });
   };
 
+  const handleAddNote = (categoryId: string) => {
+    const newNote: Note = {
+      id: String(Date.now()),
+      title: '새 노트',
+      content: '',
+      categoryId,
+      updatedAt: new Date().toISOString().split('T')[0],
+    };
+    setNotes((prevNotes) => [newNote, ...prevNotes]);
+    setSelectedId(newNote.id);
+    console.log('새 노트 추가됨:', newNote);
+  };
+
   return (
     <>
       <Sidebar
@@ -37,6 +50,7 @@ export default function Home() {
         categories={MOCK_CATEGORIES}
         selectedId={selectedId}
         onSelect={setSelectedId}
+        onAddNote={handleAddNote}
       />
       <NoteContent note={selectedNote} onSave={handleSaveNote} />
     </>

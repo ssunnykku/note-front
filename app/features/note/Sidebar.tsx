@@ -6,12 +6,32 @@ interface SidebarProps {
   categories: Category[];
   selectedId: string | null;
   onSelect: (id: string) => void;
+  onAddNote?: (categoryId: string) => void;
 }
 
-const Sidebar = ({ notes, categories, selectedId, onSelect }: SidebarProps) => {
+const Sidebar = ({ notes, categories, selectedId, onSelect, onAddNote }: SidebarProps) => {
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [openCategories, setOpenCategories] = useState<Set<string>>(
     new Set(categories.map((cat) => cat.id)),
   );
+
+  // 노트 추가 시 카테고리 열기
+  const handleAddNote = (categoryId: string) => {
+    if (onAddNote) {
+      onAddNote(categoryId);
+      // 카테고리가 닫혀있으면 열기
+      if (!openCategories.has(categoryId)) {
+        setOpenCategories((prev) => new Set(prev).add(categoryId));
+      }
+    }
+  };
+
+  // 선택된 노트가 속한 카테고리 찾기
+  const getSelectedNoteCategory = () => {
+    if (!selectedId) return null;
+    const selectedNote = notes.find((note) => note.id === selectedId);
+    return selectedNote?.categoryId || null;
+  };
 
   const toggleCategory = (categoryId: string) => {
     setOpenCategories((prev) => {
@@ -30,12 +50,41 @@ const Sidebar = ({ notes, categories, selectedId, onSelect }: SidebarProps) => {
   };
 
   return (
-    <aside className="w-64 shrink-0 border-r border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900 overflow-y-auto">
+    <aside
+      className={`shrink-0 border-r border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900 overflow-y-auto transition-all duration-300 ${
+        isCollapsed ? 'w-16' : 'w-64'
+      }`}
+    >
       <div className="flex items-center justify-between px-4 py-3">
-        <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-          메모
-        </span>
-        <span className="text-xs text-gray-400 dark:text-gray-500">{notes.length}</span>
+        {!isCollapsed ? (
+          <>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsCollapsed(true)}
+                className="w-5 h-5 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-800 rounded transition-colors"
+                aria-label="사이드바 접기"
+              >
+                <svg className="w-3 h-3 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                기록
+              </span>
+            </div>
+            <span className="text-xs text-gray-400 dark:text-gray-500">{notes.length}</span>
+          </>
+        ) : (
+          <button
+            onClick={() => setIsCollapsed(false)}
+            className="w-8 h-8 mx-auto flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-800 rounded transition-colors"
+            aria-label="사이드바 펴기"
+          >
+            <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        )}
       </div>
       <div>
         {categories.map((category) => {
@@ -44,35 +93,72 @@ const Sidebar = ({ notes, categories, selectedId, onSelect }: SidebarProps) => {
 
           return (
             <div key={category.id}>
-              <button
-                onClick={() => toggleCategory(category.id)}
-                className="w-full flex items-center justify-between px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <svg
-                    className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${
-                      isOpen ? 'rotate-90' : ''
-                    }`}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
+              {isCollapsed ? (
+                // 접힌 상태: 색상 점만 표시
+                <button
+                  onClick={() => setIsCollapsed(false)}
+                  className="w-full flex items-center justify-center px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
+                  title={category.name}
+                >
                   <div
-                    className="w-2 h-2 rounded-full"
+                    className="w-3 h-3 rounded-full"
                     style={{ backgroundColor: category.color }}
                   />
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    {category.name}
-                  </span>
+                </button>
+              ) : (
+                // 펼쳐진 상태: 전체 UI
+                <div className="group">
+                  <button
+                    onClick={() => toggleCategory(category.id)}
+                    className={`w-full flex items-center justify-between px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors ${
+                      !isOpen && getSelectedNoteCategory() === category.id
+                        ? 'bg-gray-100 dark:bg-gray-800/50'
+                        : ''
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <svg
+                        className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${
+                          isOpen ? 'rotate-90' : ''
+                        }`}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                      <div
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: category.color }}
+                      />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {category.name}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {onAddNote && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddNote(category.id);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-all"
+                          aria-label="노트 추가"
+                        >
+                          <svg className="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                          </svg>
+                        </button>
+                      )}
+                      <span className="text-xs text-gray-400 dark:text-gray-500">
+                        {categoryNotes.length}
+                      </span>
+                    </div>
+                  </button>
                 </div>
-                <span className="text-xs text-gray-400 dark:text-gray-500">
-                  {categoryNotes.length}
-                </span>
-              </button>
+              )}
 
-              {isOpen && (
+              {!isCollapsed && isOpen && (
                 <ul>
                   {categoryNotes.map((note) => (
                     <li key={note.id}>
