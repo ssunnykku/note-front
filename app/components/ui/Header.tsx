@@ -7,7 +7,11 @@ const Header = () => {
         <Link to="/" className="text-lg font-semibold text-gray-900 dark:text-white">
           Note
         </Link>
-        <nav className="flex items-center gap-4">{/* 네비게이션 링크 슬롯 */}</nav>
+        <nav className="flex items-center gap-4">
+          <button className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-medium hover:shadow-lg transition-shadow">
+            U
+          </button>
+        </nav>
       </div>
     </header>
   );

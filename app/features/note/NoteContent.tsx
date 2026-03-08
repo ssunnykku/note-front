@@ -1,11 +1,66 @@
-import Markdown from 'react-markdown';
+import { useState, useEffect, useCallback } from 'react';
+import { marked } from 'marked';
+import HelpTooltip from '~/components/ui/HelpModal';
 import type { Note } from './types';
 
 interface NoteContentProps {
   note: Note | null;
+  onSave?: (noteId: string, title: string, content: string) => void;
 }
 
-const NoteContent = ({ note }: NoteContentProps) => {
+const NoteContent = ({ note, onSave }: NoteContentProps) => {
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [TipTapEditor, setTipTapEditor] = useState<any>(null);
+
+  useEffect(() => {
+    // 클라이언트 사이드에서만 TipTap 로드
+    import('./TipTapEditor').then((mod) => {
+      setTipTapEditor(() => mod.default);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (note) {
+      setTitle(note.title);
+      // 마크다운을 HTML로 변환
+      const htmlContent = note.content.includes('<')
+        ? note.content
+        : marked.parse(note.content) as string;
+      setContent(htmlContent);
+    }
+  }, [note]);
+
+  const saveNote = useCallback(() => {
+    if (note && onSave) {
+      setIsSaving(true);
+      onSave(note.id, title, content);
+      setLastSaved(new Date());
+      setTimeout(() => setIsSaving(false), 500);
+    }
+  }, [note, title, content, onSave]);
+
+  // 5분마다 자동 저장
+  useEffect(() => {
+    if (!note) return;
+
+    const autoSaveInterval = setInterval(() => {
+      saveNote();
+    }, 5 * 60 * 1000);
+
+    return () => clearInterval(autoSaveInterval);
+  }, [saveNote, note]);
+
+  const handleManualSave = () => {
+    saveNote();
+  };
+
+  const handleContentChange = (newContent: string) => {
+    setContent(newContent);
+  };
+
   if (!note) {
     return (
       <div className="flex flex-1 items-center justify-center text-gray-400 dark:text-gray-500">
@@ -15,15 +70,50 @@ const NoteContent = ({ note }: NoteContentProps) => {
   }
 
   return (
-    <article className="flex-1 overflow-y-auto px-12 py-10">
-      <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{note.title}</h1>
-      <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
-        마지막 수정: {note.updatedAt}
-      </p>
-      <div className="prose dark:prose-invert mt-8 max-w-none">
-        <Markdown>{note.content}</Markdown>
+    <div className="flex-1 flex flex-col overflow-hidden">
+      {/* 헤더 */}
+      <div className="border-b border-gray-200 dark:border-gray-800 px-6 py-3 bg-white dark:bg-gray-950">
+        <div className="flex items-center justify-between gap-4">
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="flex-1 text-2xl font-bold bg-transparent border-none outline-none text-gray-900 dark:text-white placeholder:text-gray-400"
+            placeholder="제목 없음"
+          />
+          <div className="flex items-center gap-2 shrink-0">
+            {/* 도움말 버튼 */}
+            <HelpTooltip />
+          </div>
+        </div>
+        <div className="flex items-center gap-2 mt-2 text-xs">
+          <span className="text-gray-400 dark:text-gray-500">
+            마지막 수정: {note.updatedAt}
+          </span>
+          <span className="text-gray-300 dark:text-gray-700">•</span>
+          {isSaving ? (
+            <span className="text-gray-500 dark:text-gray-400">저장 중...</span>
+          ) : lastSaved ? (
+            <span className="text-gray-600 dark:text-gray-300">
+              자동 저장됨 ({lastSaved.toLocaleTimeString()})
+            </span>
+          ) : (
+            <span className="text-gray-400 dark:text-gray-500">5분마다 자동 저장</span>
+          )}
+        </div>
       </div>
-    </article>
+
+      {/* 컨텐츠 영역 */}
+      <div className="flex-1 flex overflow-hidden">
+        {TipTapEditor ? (
+          <TipTapEditor content={content} onChange={handleContentChange} />
+        ) : (
+          <div className="flex-1 flex items-center justify-center text-gray-400">
+            <p>에디터 로딩 중...</p>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 

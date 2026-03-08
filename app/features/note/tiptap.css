@@ -1,0 +1,117 @@
+/* TipTap 에디터 기본 스타일 */
+.tiptap {
+  outline: none;
+}
+
+.tiptap p.is-editor-empty:first-child::before {
+  color: #adb5bd;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* 제목 스타일 */
+.tiptap h1 {
+  font-size: 2em;
+  font-weight: 700;
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+.tiptap h2 {
+  font-size: 1.5em;
+  font-weight: 600;
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+.tiptap h3 {
+  font-size: 1.25em;
+  font-weight: 600;
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+/* 리스트 스타일 */
+.tiptap ul,
+.tiptap ol {
+  padding-left: 1.5em;
+  margin: 0.5em 0;
+}
+
+.tiptap li {
+  margin: 0.25em 0;
+}
+
+/* 코드 블록 */
+.tiptap pre {
+  background: #f3f4f6;
+  border-radius: 0.5rem;
+  color: #1f2937;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 0.75rem 1rem;
+  margin: 0.5em 0;
+}
+
+.dark .tiptap pre {
+  background: #1f2937;
+  color: #f3f4f6;
+}
+
+.tiptap code {
+  background: #f3f4f6;
+  border-radius: 0.25rem;
+  color: #1f2937;
+  font-size: 0.9em;
+  padding: 0.2em 0.4em;
+}
+
+.dark .tiptap code {
+  background: #1f2937;
+  color: #f3f4f6;
+}
+
+/* 인용문 */
+.tiptap blockquote {
+  border-left: 3px solid #d1d5db;
+  padding-left: 1rem;
+  margin: 0.5em 0;
+  color: #6b7280;
+}
+
+.dark .tiptap blockquote {
+  border-left-color: #4b5563;
+  color: #9ca3af;
+}
+
+/* 수평선 */
+.tiptap hr {
+  border: none;
+  border-top: 2px solid #e5e7eb;
+  margin: 2rem 0;
+}
+
+.dark .tiptap hr {
+  border-top-color: #374151;
+}
+
+/* 링크 */
+.tiptap a {
+  color: #3b82f6;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.tiptap a:hover {
+  color: #2563eb;
+}
+
+/* 강조 */
+.tiptap strong {
+  font-weight: 700;
+}
+
+.tiptap em {
+  font-style: italic;
+}
