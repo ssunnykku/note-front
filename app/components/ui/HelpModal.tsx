@@ -43,6 +43,18 @@ const HelpTooltip = () => {
                     Cmd+I
                   </kbd>
                 </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">취소선</span>
+                  <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-[10px]">
+                    Cmd+Shift+X
+                  </kbd>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">실행 취소</span>
+                  <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-[10px]">
+                    Cmd+Z
+                  </kbd>
+                </div>
               </div>
             </div>
 
@@ -52,9 +64,15 @@ const HelpTooltip = () => {
               </h4>
               <div className="space-y-1 text-xs">
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">제목</span>
+                  <span className="text-gray-600 dark:text-gray-400">제목 1</span>
                   <code className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-[10px]">
                     # Space
+                  </code>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">제목 2</span>
+                  <code className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-[10px]">
+                    ## Space
                   </code>
                 </div>
                 <div className="flex justify-between">
@@ -64,13 +82,19 @@ const HelpTooltip = () => {
                   </code>
                 </div>
                 <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">번호 리스트</span>
+                  <code className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-[10px]">
+                    1. Space
+                  </code>
+                </div>
+                <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-400">인용</span>
                   <code className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-[10px]">
                     &gt; Space
                   </code>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">코드</span>
+                  <span className="text-gray-600 dark:text-gray-400">코드 블록</span>
                   <code className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-[10px]">
                     ``` Space
                   </code>
@@ -79,9 +103,14 @@ const HelpTooltip = () => {
             </div>
 
             <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
-              <p className="text-[10px] text-gray-500 dark:text-gray-400">
-                💾 5분마다 자동 저장됩니다
-              </p>
+              <h4 className="text-xs font-semibold text-gray-900 dark:text-white mb-2">
+                💡 팁
+              </h4>
+              <div className="space-y-1.5 text-[10px] text-gray-600 dark:text-gray-400">
+                <p>🎨 **굵게**, *기울임*, ~~취소선~~ 마크다운 지원</p>
+                <p>📋 [링크](url) 형식으로 링크를 추가할 수 있어요</p>
+                <p>⚡ 인라인 코드는 `backtick`으로 감싸세요</p>
+              </div>
             </div>
           </div>
         </div>
