@@ -16,10 +16,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## 주요 명령어
 
 ```bash
-pnpm dev          # 개발 서버 실행 (HMR)
-pnpm build        # 프로덕션 빌드
+pnpm dev          # 개발 서버 실행 (HMR) - http://localhost:5173
+pnpm build        # 프로덕션 빌드 (build/client, build/server 생성)
 pnpm start        # 빌드된 서버 실행
 pnpm typecheck    # React Router 타입 생성 + TypeScript 타입 검사
+pnpm lint         # ESLint 실행 (app/ 디렉터리)
+pnpm lint:fix     # ESLint 자동 수정
+pnpm format       # Prettier로 코드 포맷팅
+```
+
+**Docker 빌드:**
+
+```bash
+docker build -t note-front .
+docker run -p 3000:3000 note-front
 ```
 
 ## 디렉터리 구조
@@ -50,6 +60,8 @@ app/
 - `action()` — 폼 제출, mutation 처리
 
 라우트 타입은 `.react-router/types/`에 자동 생성되며 `import type { Route } from "./+types/<name>"`으로 사용.
+
+**타입 생성:** `pnpm typecheck`를 실행하면 `react-router typegen`이 먼저 실행되어 `.react-router/types/`에 라우트별 타입 정의가 생성된다. 이 타입들은 `loader`, `action`, `meta`, `ErrorBoundary` 등의 함수에서 사용된다.
 
 ## 경로 별칭
 
@@ -98,6 +110,12 @@ export default NoteCard;
 - API 클라이언트는 `app/lib/api.ts`에서 관리
 - 백엔드 base URL은 환경변수로 관리 (`VITE_API_URL`)
 - fetch 기반, 응답 타입은 제네릭으로 지정
+
+### ESLint 및 Prettier
+
+- **ESLint**: TypeScript ESLint 기반, React Hooks 및 React Refresh 플러그인 사용
+  - `app/routes/**/*.tsx`와 `app/root.tsx`에서는 `react-refresh/only-export-components` 규칙 비활성화 (라우트 파일은 여러 export를 허용)
+- **Prettier**: 세미콜론 사용, 홑따옴표, 2칸 들여쓰기, trailing comma, 최대 줄 길이 100자
 
 ## 커밋 규칙
 
