@@ -11,37 +11,52 @@
   pointer-events: none;
 }
 
-/* 제목 스타일 */
+/* 제목 스타일 - 각 레벨별 차별화된 크기와 간격 */
 .tiptap h1 {
-  font-size: 2em;
+  font-size: 1.5em;
   font-weight: 700;
-  margin-top: 0.5em;
-  margin-bottom: 0.5em;
+  line-height: 1.3;
+  margin-top: 0.8rem;
+  margin-bottom: 0.6em;
 }
 
 .tiptap h2 {
-  font-size: 1.5em;
+  font-size: 1.25em;
   font-weight: 600;
-  margin-top: 0.5em;
+  line-height: 1.4;
+  margin-top: 0.8rem;
   margin-bottom: 0.5em;
 }
 
 .tiptap h3 {
-  font-size: 1.25em;
+  font-size: 1.125em;
   font-weight: 600;
-  margin-top: 0.5em;
-  margin-bottom: 0.5em;
+  line-height: 1.4;
+  margin-top: 0.8rem;
+  margin-bottom: 0.4em;
 }
 
-/* 리스트 스타일 */
+/* 일반 텍스트 - 최소 간격 */
+.tiptap p {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+  line-height: 1.6;
+}
+
+/* 리스트 스타일 - 최소 간격 */
 .tiptap ul,
 .tiptap ol {
   padding-left: 1.5em;
-  margin: 0.5em 0;
+  margin: 0.4em 0;
+  line-height: 1.6;
 }
 
 .tiptap li {
-  margin: 0.25em 0;
+  margin: 0.1em 0;
+}
+
+.tiptap li p {
+  margin: 0;
 }
 
 /* 코드 블록 */
