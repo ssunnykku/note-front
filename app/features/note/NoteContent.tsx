@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { marked } from 'marked';
 import HelpTooltip from '~/components/ui/HelpModal';
 import type { Note } from './types';
@@ -14,6 +14,8 @@ const NoteContent = ({ note, onSave }: NoteContentProps) => {
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [TipTapEditor, setTipTapEditor] = useState<any>(null);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isInitialMount = useRef(true); // 초기 마운트 확인용
 
   useEffect(() => {
     // 클라이언트 사이드에서만 TipTap 로드
@@ -30,6 +32,8 @@ const NoteContent = ({ note, onSave }: NoteContentProps) => {
         ? note.content
         : marked.parse(note.content) as string;
       setContent(htmlContent);
+      // 새 노트를 로드할 때는 초기 마운트로 간주
+      isInitialMount.current = true;
     }
   }, [note]);
 
@@ -42,20 +46,42 @@ const NoteContent = ({ note, onSave }: NoteContentProps) => {
     }
   }, [note, title, content, onSave]);
 
-  // 5분마다 자동 저장
-  useEffect(() => {
-    if (!note) return;
-
-    const autoSaveInterval = setInterval(() => {
-      saveNote();
-    }, 5 * 60 * 1000);
-
-    return () => clearInterval(autoSaveInterval);
-  }, [saveNote, note]);
+  // 디바운스된 자동 저장으로 대체됨 (아래 handleContentChange 참고)
 
   const handleManualSave = () => {
     saveNote();
   };
+
+  // 디바운스된 자동 저장 (타이핑 멈춘 후 1초 뒤 한 번만 저장)
+  useEffect(() => {
+    // 초기 마운트 시에는 저장하지 않음
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    if (!note || !onSave) return;
+
+    // 기존 타이머가 있으면 취소 (타이핑 계속하면 계속 리셋)
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    // 새 타이머 시작 - 1초 후 저장
+    debounceTimerRef.current = setTimeout(() => {
+      setIsSaving(true);
+      onSave(note.id, title, content);
+      setLastSaved(new Date());
+      setTimeout(() => setIsSaving(false), 500);
+    }, 1000);
+
+    // 컴포넌트 언마운트 시 타이머 정리
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [content, title]); // content나 title이 바뀔 때만 실행
 
   const handleContentChange = (newContent: string) => {
     setContent(newContent);
@@ -97,9 +123,7 @@ const NoteContent = ({ note, onSave }: NoteContentProps) => {
             <span className="text-gray-600 dark:text-gray-300">
               자동 저장됨 ({lastSaved.toLocaleTimeString()})
             </span>
-          ) : (
-            <span className="text-gray-400 dark:text-gray-500">5분마다 자동 저장</span>
-          )}
+          ) : null}
         </div>
       </div>
 

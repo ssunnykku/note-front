@@ -26,7 +26,7 @@ const TipTapEditor = ({ content, onChange, placeholder }: TipTapEditorProps) => 
     editorProps: {
       attributes: {
         class:
-          'prose dark:prose-invert prose-sm sm:prose-base lg:prose-lg xl:prose-xl max-w-none focus:outline-none min-h-[500px] px-8 py-6',
+          'tiptap prose dark:prose-invert prose-sm max-w-none focus:outline-none min-h-[500px] px-8 py-5',
       },
     },
     onUpdate: ({ editor }) => {
