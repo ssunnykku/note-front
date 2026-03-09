@@ -59,20 +59,20 @@ const Sidebar = ({ notes, categories, selectedId, onSelect, onAddNote }: Sidebar
         {!isCollapsed ? (
           <>
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => setIsCollapsed(true)}
-                className="w-5 h-5 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-800 rounded transition-colors"
-                aria-label="사이드바 접기"
-              >
-                <svg className="w-3 h-3 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
               <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                 기록
               </span>
+              <span className="text-xs text-gray-400 dark:text-gray-500">{notes.length}</span>
             </div>
-            <span className="text-xs text-gray-400 dark:text-gray-500">{notes.length}</span>
+            <button
+              onClick={() => setIsCollapsed(true)}
+              className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-800 rounded transition-colors"
+              aria-label="사이드바 접기"
+            >
+              <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
           </>
         ) : (
           <button
