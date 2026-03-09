@@ -1,5 +1,7 @@
-import { useState } from 'react';
-import type { Note, Category } from './types';
+import { useState, useRef, useEffect } from 'react';
+import type { Note, Category, ChatRoom } from './types';
+
+const MAX_CHATS_PER_CATEGORY = 5;
 
 interface SidebarProps {
   notes: Note[];
@@ -7,26 +9,83 @@ interface SidebarProps {
   selectedId: string | null;
   onSelect: (id: string) => void;
   onAddNote?: (categoryId: string) => void;
+  isChatOpen: boolean;
+  onToggleChat: () => void;
+  chatRooms: ChatRoom[];
+  selectedChatId: string | null;
+  onSelectChat: (chatId: string) => void;
+  onAddChat: (categoryId: string) => void;
+  onRenameChat: (chatId: string, title: string) => void;
 }
 
-const Sidebar = ({ notes, categories, selectedId, onSelect, onAddNote }: SidebarProps) => {
+const Sidebar = ({
+  notes,
+  categories,
+  selectedId,
+  onSelect,
+  onAddNote,
+  isChatOpen,
+  onToggleChat,
+  chatRooms,
+  selectedChatId,
+  onSelectChat,
+  onAddChat,
+  onRenameChat,
+}: SidebarProps) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [editingChatId, setEditingChatId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState('');
+  const editInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editingChatId) {
+      editInputRef.current?.focus();
+      editInputRef.current?.select();
+    }
+  }, [editingChatId]);
+
+  const startRename = (chatId: string, currentTitle: string) => {
+    setEditingChatId(chatId);
+    setEditingTitle(currentTitle);
+  };
+
+  const commitRename = () => {
+    if (editingChatId && editingTitle.trim()) {
+      onRenameChat(editingChatId, editingTitle.trim());
+    }
+    setEditingChatId(null);
+    setEditingTitle('');
+  };
+
+  const cancelRename = () => {
+    setEditingChatId(null);
+    setEditingTitle('');
+  };
   const [openCategories, setOpenCategories] = useState<Set<string>>(
     new Set(categories.map((cat) => cat.id)),
   );
+  const [openChatCategories, setOpenChatCategories] = useState<Set<string>>(
+    new Set(categories.map((cat) => cat.id)),
+  );
 
-  // 노트 추가 시 카테고리 열기
   const handleAddNote = (categoryId: string) => {
     if (onAddNote) {
       onAddNote(categoryId);
-      // 카테고리가 닫혀있으면 열기
       if (!openCategories.has(categoryId)) {
         setOpenCategories((prev) => new Set(prev).add(categoryId));
       }
     }
   };
 
-  // 선택된 노트가 속한 카테고리 찾기
+  const handleAddChat = (categoryId: string) => {
+    const categoryChats = chatRooms.filter((c) => c.categoryId === categoryId);
+    if (categoryChats.length >= MAX_CHATS_PER_CATEGORY) return;
+    onAddChat(categoryId);
+    if (!openChatCategories.has(categoryId)) {
+      setOpenChatCategories((prev) => new Set(prev).add(categoryId));
+    }
+  };
+
   const getSelectedNoteCategory = () => {
     if (!selectedId) return null;
     const selectedNote = notes.find((note) => note.id === selectedId);
@@ -45,8 +104,24 @@ const Sidebar = ({ notes, categories, selectedId, onSelect, onAddNote }: Sidebar
     });
   };
 
+  const toggleChatCategory = (categoryId: string) => {
+    setOpenChatCategories((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(categoryId)) {
+        newSet.delete(categoryId);
+      } else {
+        newSet.add(categoryId);
+      }
+      return newSet;
+    });
+  };
+
   const getNotesByCategory = (categoryId: string) => {
     return notes.filter((note) => note.categoryId === categoryId);
+  };
+
+  const getChatsByCategory = (categoryId: string) => {
+    return chatRooms.filter((chat) => chat.categoryId === categoryId);
   };
 
   return (
@@ -55,15 +130,54 @@ const Sidebar = ({ notes, categories, selectedId, onSelect, onAddNote }: Sidebar
         isCollapsed ? 'w-16' : 'w-64'
       }`}
     >
+      {/* 상단 토글 버튼 + 접기 버튼 */}
       <div className="flex items-center justify-between px-4 py-3">
         {!isCollapsed ? (
           <>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                기록
-              </span>
-              <span className="text-xs text-gray-400 dark:text-gray-500">{notes.length}</span>
-            </div>
+            <button
+              onClick={onToggleChat}
+              className="flex items-center gap-1.5 px-2 py-1 rounded transition-colors hover:bg-gray-200 dark:hover:bg-gray-800"
+            >
+              {isChatOpen ? (
+                <>
+                  <svg
+                    className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    기록
+                  </span>
+                </>
+              ) : (
+                <>
+                  <svg
+                    className="w-3.5 h-3.5 text-accent"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"
+                    />
+                  </svg>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    AI 채팅
+                  </span>
+                </>
+              )}
+            </button>
             <button
               onClick={() => setIsCollapsed(true)}
               className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-800 rounded transition-colors"
@@ -86,111 +200,259 @@ const Sidebar = ({ notes, categories, selectedId, onSelect, onAddNote }: Sidebar
           </button>
         )}
       </div>
-      <div>
-        {categories.map((category) => {
-          const categoryNotes = getNotesByCategory(category.id);
-          const isOpen = openCategories.has(category.id);
 
-          return (
-            <div key={category.id}>
-              {isCollapsed ? (
-                // 접힌 상태: 색상 점만 표시
-                <button
-                  onClick={() => setIsCollapsed(false)}
-                  className="w-full flex items-center justify-center px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
-                  title={category.name}
-                >
-                  <div
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: category.color }}
-                  />
-                </button>
-              ) : (
-                // 펼쳐진 상태: 전체 UI
-                <div className="group">
-                  <button
-                    onClick={() => toggleCategory(category.id)}
-                    className={`w-full flex items-center justify-between px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors ${
-                      !isOpen && getSelectedNoteCategory() === category.id
-                        ? 'bg-gray-100 dark:bg-gray-800/50'
-                        : ''
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <svg
-                        className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${
-                          isOpen ? 'rotate-90' : ''
-                        }`}
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
+      {isChatOpen ? (
+        /* ======= 채팅 모드 ======= */
+        <>
+          {!isCollapsed && (
+            <div className="flex items-center gap-2 px-4 py-2">
+              <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                채팅 목록
+              </span>
+              <span className="text-xs text-gray-400 dark:text-gray-500">{chatRooms.length}</span>
+            </div>
+          )}
+          <div>
+            {categories.map((category) => {
+              const categoryChats = getChatsByCategory(category.id);
+              const isOpen = openChatCategories.has(category.id);
+              const canAdd = categoryChats.length < MAX_CHATS_PER_CATEGORY;
+
+              return (
+                <div key={category.id}>
+                  {isCollapsed ? (
+                    <button
+                      onClick={() => setIsCollapsed(false)}
+                      className="w-full flex items-center justify-center px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
+                      title={category.name}
+                    >
                       <div
-                        className="w-2 h-2 rounded-full"
+                        className="w-3 h-3 rounded-full"
                         style={{ backgroundColor: category.color }}
                       />
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {category.name}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {onAddNote && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleAddNote(category.id);
-                          }}
-                          className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-all"
-                          aria-label="노트 추가"
-                        >
-                          <svg className="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                          </svg>
-                        </button>
-                      )}
-                      <span className="text-xs text-gray-400 dark:text-gray-500">
-                        {categoryNotes.length}
-                      </span>
-                    </div>
-                  </button>
-                </div>
-              )}
-
-              {!isCollapsed && isOpen && (
-                <ul>
-                  {categoryNotes.map((note) => (
-                    <li key={note.id}>
+                    </button>
+                  ) : (
+                    <div className="group">
                       <button
-                        onClick={() => onSelect(note.id)}
-                        className={`w-full text-left pl-10 pr-4 py-3 border-b border-gray-100 dark:border-gray-800 transition-colors ${
-                          selectedId === note.id
-                            ? 'bg-white dark:bg-gray-800'
-                            : 'hover:bg-gray-100 dark:hover:bg-gray-800/50'
+                        onClick={() => toggleChatCategory(category.id)}
+                        className={`w-full flex items-center justify-between px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors ${
+                          !isOpen &&
+                          selectedChatId &&
+                          categoryChats.some((c) => c.id === selectedChatId)
+                            ? 'bg-gray-100 dark:bg-gray-800/50'
+                            : ''
                         }`}
                       >
-                        <p
-                          className={`text-sm font-medium truncate ${
-                            selectedId === note.id
-                              ? 'text-gray-900 dark:text-white'
-                              : 'text-gray-700 dark:text-gray-300'
-                          }`}
-                        >
-                          {note.title}
-                        </p>
-                        <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                          {note.updatedAt}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <svg
+                            className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${
+                              isOpen ? 'rotate-90' : ''
+                            }`}
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                          <div
+                            className="w-2 h-2 rounded-full"
+                            style={{ backgroundColor: category.color }}
+                          />
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            {category.name}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {canAdd && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAddChat(category.id);
+                              }}
+                              className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-all"
+                              aria-label="채팅 추가"
+                            >
+                              <svg className="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                              </svg>
+                            </button>
+                          )}
+                          <span className="text-xs text-gray-400 dark:text-gray-500">
+                            {categoryChats.length}
+                          </span>
+                        </div>
                       </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
+                    </div>
+                  )}
+
+                  {!isCollapsed && isOpen && (
+                    <ul>
+                      {categoryChats.map((chat) => (
+                        <li key={chat.id}>
+                          <div
+                            onClick={() => onSelectChat(chat.id)}
+                            onDoubleClick={() => startRename(chat.id, chat.title)}
+                            className={`w-full text-left pl-10 pr-4 py-3 border-b border-gray-100 dark:border-gray-800 transition-colors cursor-pointer ${
+                              selectedChatId === chat.id
+                                ? 'bg-white dark:bg-gray-800'
+                                : 'hover:bg-gray-100 dark:hover:bg-gray-800/50'
+                            }`}
+                          >
+                            {editingChatId === chat.id ? (
+                              <input
+                                ref={editInputRef}
+                                type="text"
+                                value={editingTitle}
+                                onChange={(e) => setEditingTitle(e.target.value)}
+                                onBlur={commitRename}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') commitRename();
+                                  if (e.key === 'Escape') cancelRename();
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                onDoubleClick={(e) => e.stopPropagation()}
+                                className="w-full text-sm font-medium bg-transparent border-b border-accent outline-none text-gray-900 dark:text-white"
+                              />
+                            ) : (
+                              <p
+                                className={`text-sm font-medium truncate ${
+                                  selectedChatId === chat.id
+                                    ? 'text-gray-900 dark:text-white'
+                                    : 'text-gray-700 dark:text-gray-300'
+                                }`}
+                              >
+                                {chat.title}
+                              </p>
+                            )}
+                            <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                              {chat.createdAt}
+                            </p>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </>
+      ) : (
+        /* ======= 노트 모드 ======= */
+        <>
+          {!isCollapsed && (
+            <div className="flex items-center gap-2 px-4 py-2">
+              <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                기록
+              </span>
+              <span className="text-xs text-gray-400 dark:text-gray-500">{notes.length}</span>
             </div>
-          );
-        })}
-      </div>
+          )}
+          <div>
+            {categories.map((category) => {
+              const categoryNotes = getNotesByCategory(category.id);
+              const isOpen = openCategories.has(category.id);
+
+              return (
+                <div key={category.id}>
+                  {isCollapsed ? (
+                    <button
+                      onClick={() => setIsCollapsed(false)}
+                      className="w-full flex items-center justify-center px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
+                      title={category.name}
+                    >
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: category.color }}
+                      />
+                    </button>
+                  ) : (
+                    <div className="group">
+                      <button
+                        onClick={() => toggleCategory(category.id)}
+                        className={`w-full flex items-center justify-between px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors ${
+                          !isOpen && getSelectedNoteCategory() === category.id
+                            ? 'bg-gray-100 dark:bg-gray-800/50'
+                            : ''
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <svg
+                            className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${
+                              isOpen ? 'rotate-90' : ''
+                            }`}
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                          <div
+                            className="w-2 h-2 rounded-full"
+                            style={{ backgroundColor: category.color }}
+                          />
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            {category.name}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {onAddNote && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAddNote(category.id);
+                              }}
+                              className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-all"
+                              aria-label="노트 추가"
+                            >
+                              <svg className="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                              </svg>
+                            </button>
+                          )}
+                          <span className="text-xs text-gray-400 dark:text-gray-500">
+                            {categoryNotes.length}
+                          </span>
+                        </div>
+                      </button>
+                    </div>
+                  )}
+
+                  {!isCollapsed && isOpen && (
+                    <ul>
+                      {categoryNotes.map((note) => (
+                        <li key={note.id}>
+                          <button
+                            onClick={() => onSelect(note.id)}
+                            className={`w-full text-left pl-10 pr-4 py-3 border-b border-gray-100 dark:border-gray-800 transition-colors ${
+                              selectedId === note.id
+                                ? 'bg-white dark:bg-gray-800'
+                                : 'hover:bg-gray-100 dark:hover:bg-gray-800/50'
+                            }`}
+                          >
+                            <p
+                              className={`text-sm font-medium truncate ${
+                                selectedId === note.id
+                                  ? 'text-gray-900 dark:text-white'
+                                  : 'text-gray-700 dark:text-gray-300'
+                              }`}
+                            >
+                              {note.title}
+                            </p>
+                            <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                              {note.updatedAt}
+                            </p>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
     </aside>
   );
 };
