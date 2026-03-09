@@ -3,8 +3,21 @@
 
 @theme {
   --font-sans:
-    'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-    'Segoe UI Symbol', 'Noto Color Emoji';
+    'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto,
+    'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic',
+    'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
+
+  /* Primary */
+  --color-primary: #5C7CFA;
+  --color-primary-hover: #4C6EF5;
+  --color-primary-light: #DBE4FF;
+  --color-primary-dark: #4263EB;
+
+  /* Accent (AI/Chat) */
+  --color-accent: #7C5CFA;
+  --color-accent-hover: #6C4CE5;
+  --color-accent-light: #EDE9FE;
+  --color-accent-dark: #6D48E5;
 }
 
 html,

@@ -19,7 +19,7 @@ const ErrorPage = ({ message = '오류 발생', details, stack }: ErrorPageProps
       )}
       <Link
         to="/"
-        className="rounded-lg bg-gray-900 px-6 py-2.5 text-sm font-medium text-white hover:bg-gray-800 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100"
+        className="rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-white hover:bg-primary-hover"
       >
         홈으로 돌아가기
       </Link>
