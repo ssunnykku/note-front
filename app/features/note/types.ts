@@ -1,7 +1,7 @@
 export interface Category {
   id: string;
   name: string;
-  color?: string;
+  notes: Note[];
 }
 
 export interface Note {

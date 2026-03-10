@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import type { Note, Category, ChatRoom } from './types';
+import type { Category, ChatRoom } from './types';
+import Palette from '~/lib/palette';
 
 const MAX_CHATS_PER_CATEGORY = 5;
 
 interface SidebarProps {
-  notes: Note[];
   categories: Category[];
   selectedId: string | null;
   onSelect: (id: string) => void;
@@ -18,8 +18,11 @@ interface SidebarProps {
   onRenameChat: (chatId: string, title: string) => void;
 }
 
+const getCategoryColor = (index: number) => {
+  return Palette.CategoryColors[index % Palette.CategoryColors.length];
+};
+
 const Sidebar = ({
-  notes,
   categories,
   selectedId,
   onSelect,
@@ -88,8 +91,8 @@ const Sidebar = ({
 
   const getSelectedNoteCategory = () => {
     if (!selectedId) return null;
-    const selectedNote = notes.find((note) => note.id === selectedId);
-    return selectedNote?.categoryId || null;
+    const cat = categories.find((c) => c.notes.some((n) => n.id === selectedId));
+    return cat?.id || null;
   };
 
   const toggleCategory = (categoryId: string) => {
@@ -114,10 +117,6 @@ const Sidebar = ({
       }
       return newSet;
     });
-  };
-
-  const getNotesByCategory = (categoryId: string) => {
-    return notes.filter((note) => note.categoryId === categoryId);
   };
 
   const getChatsByCategory = (categoryId: string) => {
@@ -213,10 +212,11 @@ const Sidebar = ({
             </div>
           )}
           <div>
-            {categories.map((category) => {
+            {categories.map((category, categoryIndex) => {
               const categoryChats = getChatsByCategory(category.id);
               const isOpen = openChatCategories.has(category.id);
               const canAdd = categoryChats.length < MAX_CHATS_PER_CATEGORY;
+              const color = getCategoryColor(categoryIndex);
 
               return (
                 <div key={category.id}>
@@ -228,7 +228,7 @@ const Sidebar = ({
                     >
                       <div
                         className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: category.color }}
+                        style={{ backgroundColor: color }}
                       />
                     </button>
                   ) : (
@@ -256,7 +256,7 @@ const Sidebar = ({
                           </svg>
                           <div
                             className="w-2 h-2 rounded-full"
-                            style={{ backgroundColor: category.color }}
+                            style={{ backgroundColor: color }}
                           />
                           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                             {category.name}
@@ -345,13 +345,15 @@ const Sidebar = ({
               <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                 기록
               </span>
-              <span className="text-xs text-gray-400 dark:text-gray-500">{notes.length}</span>
+              <span className="text-xs text-gray-400 dark:text-gray-500">
+                {categories.reduce((sum, cat) => sum + cat.notes.length, 0)}
+              </span>
             </div>
           )}
           <div>
-            {categories.map((category) => {
-              const categoryNotes = getNotesByCategory(category.id);
+            {categories.map((category, categoryIndex) => {
               const isOpen = openCategories.has(category.id);
+              const color = getCategoryColor(categoryIndex);
 
               return (
                 <div key={category.id}>
@@ -363,7 +365,7 @@ const Sidebar = ({
                     >
                       <div
                         className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: category.color }}
+                        style={{ backgroundColor: color }}
                       />
                     </button>
                   ) : (
@@ -389,7 +391,7 @@ const Sidebar = ({
                           </svg>
                           <div
                             className="w-2 h-2 rounded-full"
-                            style={{ backgroundColor: category.color }}
+                            style={{ backgroundColor: color }}
                           />
                           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                             {category.name}
@@ -411,7 +413,7 @@ const Sidebar = ({
                             </button>
                           )}
                           <span className="text-xs text-gray-400 dark:text-gray-500">
-                            {categoryNotes.length}
+                            {category.notes.length}
                           </span>
                         </div>
                       </button>
@@ -420,7 +422,7 @@ const Sidebar = ({
 
                   {!isCollapsed && isOpen && (
                     <ul>
-                      {categoryNotes.map((note) => (
+                      {category.notes.map((note) => (
                         <li key={note.id}>
                           <button
                             onClick={() => onSelect(note.id)}

@@ -35,6 +35,9 @@ const Palette = {
   Success: '#40C057',
   Error: '#FA5252',
   Warning: '#FD7E14',
+
+  // Category
+  CategoryColors: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'] as readonly string[],
 } as const;
 
 export default Palette;
