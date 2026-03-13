@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { marked } from 'marked';
-import HelpTooltip from '~/components/ui/HelpModal';
 import type { Note } from './types';
 import { formatDateTime } from '~/lib/formatDate';
 
@@ -114,8 +113,6 @@ const NoteContent = ({ note, onSave }: NoteContentProps) => {
             placeholder="제목 없음"
           />
           <div className="flex items-center gap-2 shrink-0">
-            {/* 도움말 버튼 */}
-            <HelpTooltip />
           </div>
         </div>
         <div className="flex items-center gap-2 mt-2 text-xs">
