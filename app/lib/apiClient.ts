@@ -3,7 +3,6 @@ import axios from 'axios';
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
   headers: { 'Content-Type': 'application/json' },
-  withCredentials: true,
 });
 
 // [AUTH] 토큰 인증 적용
@@ -15,14 +14,20 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// [AUTH] 토큰 만료(401) 처리
+// 응답 에러 공통 처리
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const status = error.response?.status;
+    const url = error.config?.url;
+
+    if (status === 401) {
       localStorage.removeItem('accessToken');
       window.location.href = '/login';
+    } else {
+      console.error(`[API Error] ${status ?? 'NETWORK'} ${url}`, error.response?.data);
     }
+
     return Promise.reject(error);
   },
 );

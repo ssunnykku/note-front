@@ -6,7 +6,8 @@ interface CreateCategoryRequest {
 }
 
 export const categoriesApi = {
-  getAll: () => apiClient.get<Category[]>('/categories').then((r) => r.data),
+  getAll: (userId: string) =>
+    apiClient.get<Category[]>(`/categories/${userId}/notes`).then((r) => r.data),
 
   getById: (id: string) =>
     apiClient.get<Category>(`/categories/${id}`).then((r) => r.data),

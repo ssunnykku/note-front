@@ -2,10 +2,11 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { marked } from 'marked';
 import HelpTooltip from '~/components/ui/HelpModal';
 import type { Note } from './types';
+import { formatDateTime } from '~/lib/formatDate';
 
 interface NoteContentProps {
   note: Note | null;
-  onSave?: (noteId: string, title: string, content: string) => void;
+  onSave?: (noteId: number, title: string, content: string) => void;
 }
 
 const NoteContent = ({ note, onSave }: NoteContentProps) => {
@@ -15,7 +16,6 @@ const NoteContent = ({ note, onSave }: NoteContentProps) => {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [TipTapEditor, setTipTapEditor] = useState<any>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const isInitialMount = useRef(true); // 초기 마운트 확인용
 
   useEffect(() => {
     // 클라이언트 사이드에서만 TipTap 로드
@@ -24,17 +24,23 @@ const NoteContent = ({ note, onSave }: NoteContentProps) => {
     });
   }, []);
 
+  const loadedNoteIdRef = useRef<number | null>(null);
+  const prevNoteIdRef = useRef<number | null>(null);
+
   useEffect(() => {
-    if (note) {
-      setTitle(note.title);
-      // 마크다운을 HTML로 변환
-      const htmlContent = note.content.includes('<')
-        ? note.content
-        : marked.parse(note.content) as string;
-      setContent(htmlContent);
-      // 새 노트를 로드할 때는 초기 마운트로 간주
-      isInitialMount.current = true;
-    }
+    if (!note) return;
+    // 같은 노트의 prop 변경(자동저장 후 갱신)은 무시
+    if (prevNoteIdRef.current === note.id) return;
+    prevNoteIdRef.current = note.id;
+
+    setTitle(note.title);
+    // 마크다운을 HTML로 변환
+    const htmlContent = note.content.includes('<')
+      ? note.content
+      : (marked.parse(note.content) as string);
+    setContent(htmlContent);
+    // 로드된 노트 ID를 기록하여 자동저장 방지
+    loadedNoteIdRef.current = note.id;
   }, [note]);
 
   const saveNote = useCallback(() => {
@@ -48,19 +54,19 @@ const NoteContent = ({ note, onSave }: NoteContentProps) => {
 
   // 디바운스된 자동 저장으로 대체됨 (아래 handleContentChange 참고)
 
-  const handleManualSave = () => {
-    saveNote();
-  };
+  // const handleManualSave = () => {
+  //   saveNote();
+  // };
 
   // 디바운스된 자동 저장 (타이핑 멈춘 후 1초 뒤 한 번만 저장)
   useEffect(() => {
-    // 초기 마운트 시에는 저장하지 않음
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
+    if (!note || !onSave) return;
+
+    // 노트 로드 직후에는 저장하지 않음
+    if (loadedNoteIdRef.current !== null) {
+      loadedNoteIdRef.current = null;
       return;
     }
-
-    if (!note || !onSave) return;
 
     // 기존 타이머가 있으면 취소 (타이핑 계속하면 계속 리셋)
     if (debounceTimerRef.current) {
@@ -114,7 +120,7 @@ const NoteContent = ({ note, onSave }: NoteContentProps) => {
         </div>
         <div className="flex items-center gap-2 mt-2 text-xs">
           <span className="text-gray-400 dark:text-gray-500">
-            마지막 수정: {note.updatedAt}
+            마지막 수정: {formatDateTime(note.updatedAt)}
           </span>
           <span className="text-gray-300 dark:text-gray-700">•</span>
           {isSaving ? (

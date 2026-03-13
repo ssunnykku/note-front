@@ -1,18 +1,29 @@
 import { useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
+import { authApi } from '~/lib/api/auth';
 
 export function meta() {
   return [{ title: '로그인 - Note' }, { name: 'description', content: '로그인' }];
 }
 
 export default function Login() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('로그인 시도:', { email, password });
+    setError('');
+    try {
+      const res = await authApi.login({ email, password });
+      localStorage.setItem('accessToken', res.accessToken);
+      localStorage.setItem('userId', res.user.id);
+      navigate('/');
+    } catch {
+      setError('이메일 또는 비밀번호가 올바르지 않습니다.');
+    }
   };
 
   return (
@@ -96,6 +107,10 @@ export default function Login() {
               </button>
             </div>
           </div>
+
+          {error && (
+            <p className="text-sm text-red-500">{error}</p>
+          )}
 
           <button
             type="submit"

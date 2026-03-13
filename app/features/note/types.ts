@@ -1,20 +1,29 @@
+export interface CategoryNoteItem {
+  id: number;
+  userId: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Category {
-  id: string;
-  name: string;
-  notes: Note[];
+  id: number;
+  categoryName: string;
+  notes: CategoryNoteItem[];
 }
 
 export interface Note {
-  id: string;
+  id: number;
+  userId: string;
   title: string;
   content: string;
+  createdAt: string;
   updatedAt: string;
-  categoryId: string;
 }
 
 export interface ChatRoom {
   id: string;
   title: string;
-  categoryId: string;
+  categoryId: number;
   createdAt: string;
 }

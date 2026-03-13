@@ -1,20 +1,21 @@
 import { useState, useRef, useEffect } from 'react';
 import type { Category, ChatRoom } from './types';
 import Palette from '~/lib/palette';
+import { formatDateTime } from '~/lib/formatDate';
 
 const MAX_CHATS_PER_CATEGORY = 5;
 
 interface SidebarProps {
   categories: Category[];
-  selectedId: string | null;
-  onSelect: (id: string) => void;
-  onAddNote?: (categoryId: string) => void;
+  selectedId: number | null;
+  onSelect: (id: number) => void;
+  onAddNote?: (categoryId: number) => void;
   isChatOpen: boolean;
   onToggleChat: () => void;
   chatRooms: ChatRoom[];
   selectedChatId: string | null;
   onSelectChat: (chatId: string) => void;
-  onAddChat: (categoryId: string) => void;
+  onAddChat: (categoryId: number) => void;
   onRenameChat: (chatId: string, title: string) => void;
 }
 
@@ -40,6 +41,8 @@ const Sidebar = ({
   const [editingTitle, setEditingTitle] = useState('');
   const editInputRef = useRef<HTMLInputElement>(null);
 
+  console.log('넘어오는 값 확인: ', categories);
+
   useEffect(() => {
     if (editingChatId) {
       editInputRef.current?.focus();
@@ -64,14 +67,14 @@ const Sidebar = ({
     setEditingChatId(null);
     setEditingTitle('');
   };
-  const [openCategories, setOpenCategories] = useState<Set<string>>(
+  const [openCategories, setOpenCategories] = useState<Set<number>>(
     new Set(categories.map((cat) => cat.id)),
   );
-  const [openChatCategories, setOpenChatCategories] = useState<Set<string>>(
+  const [openChatCategories, setOpenChatCategories] = useState<Set<number>>(
     new Set(categories.map((cat) => cat.id)),
   );
 
-  const handleAddNote = (categoryId: string) => {
+  const handleAddNote = (categoryId: number) => {
     if (onAddNote) {
       onAddNote(categoryId);
       if (!openCategories.has(categoryId)) {
@@ -80,7 +83,7 @@ const Sidebar = ({
     }
   };
 
-  const handleAddChat = (categoryId: string) => {
+  const handleAddChat = (categoryId: number) => {
     const categoryChats = chatRooms.filter((c) => c.categoryId === categoryId);
     if (categoryChats.length >= MAX_CHATS_PER_CATEGORY) return;
     onAddChat(categoryId);
@@ -95,7 +98,7 @@ const Sidebar = ({
     return cat?.id || null;
   };
 
-  const toggleCategory = (categoryId: string) => {
+  const toggleCategory = (categoryId: number) => {
     setOpenCategories((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(categoryId)) {
@@ -107,7 +110,7 @@ const Sidebar = ({
     });
   };
 
-  const toggleChatCategory = (categoryId: string) => {
+  const toggleChatCategory = (categoryId: number) => {
     setOpenChatCategories((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(categoryId)) {
@@ -119,7 +122,7 @@ const Sidebar = ({
     });
   };
 
-  const getChatsByCategory = (categoryId: string) => {
+  const getChatsByCategory = (categoryId: number) => {
     return chatRooms.filter((chat) => chat.categoryId === categoryId);
   };
 
@@ -182,8 +185,18 @@ const Sidebar = ({
               className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-800 rounded transition-colors"
               aria-label="사이드바 접기"
             >
-              <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              <svg
+                className="w-5 h-5 text-gray-600 dark:text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
               </svg>
             </button>
           </>
@@ -193,7 +206,12 @@ const Sidebar = ({
             className="w-8 h-8 mx-auto flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-800 rounded transition-colors"
             aria-label="사이드바 펴기"
           >
-            <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg
+              className="w-5 h-5 text-gray-600 dark:text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
@@ -224,18 +242,23 @@ const Sidebar = ({
                     <button
                       onClick={() => setIsCollapsed(false)}
                       className="w-full flex items-center justify-center px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
-                      title={category.name}
+                      title={category.categoryName}
                     >
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: color }}
-                      />
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
                     </button>
                   ) : (
                     <div className="group">
-                      <button
+                      <div
+                        role="button"
+                        tabIndex={0}
                         onClick={() => toggleChatCategory(category.id)}
-                        className={`w-full flex items-center justify-between px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors ${
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            toggleChatCategory(category.id);
+                          }
+                        }}
+                        className={`w-full flex items-center justify-between px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors cursor-pointer ${
                           !isOpen &&
                           selectedChatId &&
                           categoryChats.some((c) => c.id === selectedChatId)
@@ -252,14 +275,19 @@ const Sidebar = ({
                             viewBox="0 0 24 24"
                             stroke="currentColor"
                           >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
                           </svg>
                           <div
                             className="w-2 h-2 rounded-full"
                             style={{ backgroundColor: color }}
                           />
                           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            {category.name}
+                            {category.categoryName}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -272,8 +300,18 @@ const Sidebar = ({
                               className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-all"
                               aria-label="채팅 추가"
                             >
-                              <svg className="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                              <svg
+                                className="w-4 h-4 text-gray-600 dark:text-gray-400"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M12 4v16m8-8H4"
+                                />
                               </svg>
                             </button>
                           )}
@@ -281,7 +319,7 @@ const Sidebar = ({
                             {categoryChats.length}
                           </span>
                         </div>
-                      </button>
+                      </div>
                     </div>
                   )}
 
@@ -325,7 +363,7 @@ const Sidebar = ({
                               </p>
                             )}
                             <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                              {chat.createdAt}
+                              {formatDateTime(chat.createdAt)}
                             </p>
                           </div>
                         </li>
@@ -361,18 +399,23 @@ const Sidebar = ({
                     <button
                       onClick={() => setIsCollapsed(false)}
                       className="w-full flex items-center justify-center px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
-                      title={category.name}
+                      title={category.categoryName}
                     >
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: color }}
-                      />
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
                     </button>
                   ) : (
                     <div className="group">
-                      <button
+                      <div
+                        role="button"
+                        tabIndex={0}
                         onClick={() => toggleCategory(category.id)}
-                        className={`w-full flex items-center justify-between px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors ${
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            toggleCategory(category.id);
+                          }
+                        }}
+                        className={`w-full flex items-center justify-between px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors cursor-pointer ${
                           !isOpen && getSelectedNoteCategory() === category.id
                             ? 'bg-gray-100 dark:bg-gray-800/50'
                             : ''
@@ -387,14 +430,19 @@ const Sidebar = ({
                             viewBox="0 0 24 24"
                             stroke="currentColor"
                           >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
                           </svg>
                           <div
                             className="w-2 h-2 rounded-full"
                             style={{ backgroundColor: color }}
                           />
                           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            {category.name}
+                            {category.categoryName}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -407,8 +455,18 @@ const Sidebar = ({
                               className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-all"
                               aria-label="노트 추가"
                             >
-                              <svg className="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                              <svg
+                                className="w-4 h-4 text-gray-600 dark:text-gray-400"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M12 4v16m8-8H4"
+                                />
                               </svg>
                             </button>
                           )}
@@ -416,7 +474,7 @@ const Sidebar = ({
                             {category.notes.length}
                           </span>
                         </div>
-                      </button>
+                      </div>
                     </div>
                   )}
 
@@ -442,7 +500,7 @@ const Sidebar = ({
                               {note.title}
                             </p>
                             <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                              {note.updatedAt}
+                              {formatDateTime(note.updatedAt)}
                             </p>
                           </button>
                         </li>

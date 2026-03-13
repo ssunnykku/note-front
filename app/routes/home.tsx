@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Sidebar from '~/features/note/Sidebar';
 import NoteContent from '~/features/note/NoteContent';
 import AiChatPanel from '~/features/ai/AiChatPanel';
-import { MOCK_CATEGORIES } from '~/features/note/mockData';
+import { categoriesApi } from '~/lib/api/categories';
+import { notesApi } from '~/lib/api/notes';
 import type { Note, Category, ChatRoom } from '~/features/note/types';
 
 export function meta() {
@@ -10,46 +11,78 @@ export function meta() {
 }
 
 export default function Home() {
-  const [categories, setCategories] = useState<Category[]>(MOCK_CATEGORIES);
-
-  const notes = categories.flatMap((cat) => cat.notes);
-  const [selectedId, setSelectedId] = useState<string | null>(notes[0]?.id ?? null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
 
-  const selectedNote = notes.find((note) => note.id === selectedId) ?? null;
+  useEffect(() => {
+    // TODO: 로그인 구현 후 localStorage에서 userId 가져오기
+    const userId = localStorage.getItem('userId') || '550e8400-e29b-41d4-a716-446655440000';
+
+    categoriesApi
+      .getAll(userId)
+      .then((data) => {
+        setCategories(data);
+        const allNotes = data.flatMap((cat) => cat.notes);
+        if (allNotes.length > 0 && selectedId === null) {
+          setSelectedId(allNotes[0].id);
+        }
+      })
+      .catch((err) => {
+        console.error('카테고리 로딩 실패:', err);
+      });
+  }, []);
+
+  useEffect(() => {
+    if (selectedId === null) {
+      setSelectedNote(null);
+      return;
+    }
+    notesApi
+      .getById(selectedId)
+      .then(setSelectedNote)
+      .catch(() => setSelectedNote(null));
+  }, [selectedId]);
+
   const selectedChat = chatRooms.find((c) => c.id === selectedChatId) ?? null;
 
-  const handleSaveNote = (noteId: string, title: string, content: string) => {
-    setCategories((prev) =>
-      prev.map((cat) => ({
-        ...cat,
-        notes: cat.notes.map((note) =>
-          note.id === noteId
-            ? { ...note, title, content, updatedAt: new Date().toISOString().split('T')[0] }
-            : note,
-        ),
-      })),
-    );
-    console.log('노트 저장됨:', { noteId, title, content });
+  const handleSaveNote = async (noteId: number, title: string, content: string) => {
+    try {
+      const categoryId = categories.find((cat) => cat.notes.some((n) => n.id === noteId))?.id;
+      const updated = await notesApi.update(noteId, { title, content, categoryId });
+      setCategories((prev) =>
+        prev.map((cat) => ({
+          ...cat,
+          notes: cat.notes.map((note) =>
+            note.id === noteId
+              ? { ...note, title: updated.title, updatedAt: updated.updatedAt }
+              : note,
+          ),
+        })),
+      );
+    } catch (err) {
+      console.error('노트 저장 실패:', err);
+    }
   };
 
-  const handleAddNote = (categoryId: string) => {
-    const newNote: Note = {
-      id: String(Date.now()),
+  const handleAddNote = async (categoryId: number) => {
+    const userId = localStorage.getItem('userId') || '550e8400-e29b-41d4-a716-446655440000';
+    const created = await notesApi.create({
+      userId,
       title: '새 노트',
       content: '',
       categoryId,
-      updatedAt: new Date().toISOString().split('T')[0],
-    };
+    });
+    const { content: _, ...noteItem } = created;
     setCategories((prev) =>
       prev.map((cat) =>
-        cat.id === categoryId ? { ...cat, notes: [newNote, ...cat.notes] } : cat,
+        cat.id === categoryId ? { ...cat, notes: [noteItem, ...cat.notes] } : cat,
       ),
     );
-    setSelectedId(newNote.id);
-    console.log('새 노트 추가됨:', newNote);
+    setSelectedId(created.id);
   };
 
   const handleToggleChat = () => {
@@ -65,12 +98,10 @@ export default function Home() {
   };
 
   const handleRenameChat = (chatId: string, title: string) => {
-    setChatRooms((prev) =>
-      prev.map((chat) => (chat.id === chatId ? { ...chat, title } : chat)),
-    );
+    setChatRooms((prev) => prev.map((chat) => (chat.id === chatId ? { ...chat, title } : chat)));
   };
 
-  const handleAddChat = (categoryId: string) => {
+  const handleAddChat = (categoryId: number) => {
     const categoryChats = chatRooms.filter((c) => c.categoryId === categoryId);
     if (categoryChats.length >= 5) return;
 
