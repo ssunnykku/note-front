@@ -135,18 +135,18 @@ const NoteContent = ({ note, onSave, onBack }: NoteContentProps) => {
           <div className="flex items-center gap-2 shrink-0">
           </div>
         </div>
-        <div className="flex items-center gap-2 mt-2 text-xs">
-          <span className="text-gray-400 dark:text-gray-500">
-            마지막 수정: {formatDateTime(note.updatedAt)}
-          </span>
-          <span className="text-gray-300 dark:text-gray-700">•</span>
+        <div className="mt-2 text-xs">
           {isSaving ? (
             <span className="text-gray-500 dark:text-gray-400">저장 중...</span>
           ) : lastSaved ? (
-            <span className="text-gray-600 dark:text-gray-300">
+            <span className="text-gray-400 dark:text-gray-500">
               자동 저장됨 ({lastSaved.toLocaleTimeString()})
             </span>
-          ) : null}
+          ) : (
+            <span className="text-gray-400 dark:text-gray-500">
+              마지막 수정: {formatDateTime(note.updatedAt)}
+            </span>
+          )}
         </div>
       </div>
 

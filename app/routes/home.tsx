@@ -68,6 +68,11 @@ export default function Home() {
           ),
         })),
       );
+      setSelectedNote((prev) =>
+        prev && prev.id === noteId
+          ? { ...prev, title: updated.title, updatedAt: updated.updatedAt }
+          : prev,
+      );
     } catch (err) {
       console.error('노트 저장 실패:', err);
     }
