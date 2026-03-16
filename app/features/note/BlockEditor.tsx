@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import Markdown from 'react-markdown';
 
 interface Block {
@@ -44,10 +44,12 @@ const BlockEditor = ({ initialContent, onChange }: BlockEditorProps) => {
     );
   };
 
-  const addNewBlock = (afterId: string) => {
+  const blockIdCounter = useRef(0);
+  const addNewBlock = useCallback((afterId: string) => {
     const index = blocks.findIndex((b) => b.id === afterId);
+    blockIdCounter.current += 1;
     const newBlock: Block = {
-      id: String(Date.now()),
+      id: `block-${blockIdCounter.current}-${performance.now()}`,
       content: '',
       isEditing: true,
     };
@@ -58,7 +60,7 @@ const BlockEditor = ({ initialContent, onChange }: BlockEditorProps) => {
     setTimeout(() => {
       inputRefs.current[newBlock.id]?.focus();
     }, 0);
-  };
+  }, [blocks]);
 
   const mergeWithPreviousBlock = (id: string) => {
     const index = blocks.findIndex((b) => b.id === id);
