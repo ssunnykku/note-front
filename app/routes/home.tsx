@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useOutletContext } from 'react-router';
 import Sidebar from '~/features/note/Sidebar';
 import NoteContent from '~/features/note/NoteContent';
 import AiChatPanel from '~/features/ai/AiChatPanel';
@@ -6,20 +7,27 @@ import { categoriesApi } from '~/lib/api/categories';
 import { notesApi } from '~/lib/api/notes';
 import type { Note, Category, ChatRoom } from '~/features/note/types';
 
+interface LayoutContext {
+  isMobile: boolean;
+  sidebarOpen: boolean;
+  setSidebarOpen: (open: boolean) => void;
+}
+
 export function meta() {
   return [{ title: 'Note' }, { name: 'description', content: '노트 작성 서비스' }];
 }
 
 export default function Home() {
+  const { isMobile, sidebarOpen, setSidebarOpen } = useOutletContext<LayoutContext>();
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const [mobileView, setMobileView] = useState<'list' | 'editor' | 'chat'>('list');
 
   useEffect(() => {
-    // TODO: 로그인 구현 후 localStorage에서 userId 가져오기
     const userId = localStorage.getItem('userId') || '550e8400-e29b-41d4-a716-446655440000';
 
     categoriesApi
@@ -27,8 +35,8 @@ export default function Home() {
       .then((data) => {
         setCategories(data);
         const allNotes = data.flatMap((cat) => cat.notes);
-        if (allNotes.length > 0 && selectedId === null) {
-          setSelectedId(allNotes[0].id);
+        if (allNotes.length > 0) {
+          setSelectedId((prev) => prev ?? allNotes[0].id);
         }
       })
       .catch((err) => {
@@ -37,10 +45,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (selectedId === null) {
-      setSelectedNote(null);
-      return;
-    }
+    if (selectedId === null) return;
     notesApi
       .getById(selectedId)
       .then(setSelectedNote)
@@ -76,13 +81,20 @@ export default function Home() {
       content: '',
       categoryId,
     });
-    const { content: _, ...noteItem } = created;
+    const noteItem = {
+      id: created.id,
+      userId: created.userId,
+      title: created.title,
+      createdAt: created.createdAt,
+      updatedAt: created.updatedAt,
+    };
     setCategories((prev) =>
       prev.map((cat) =>
         cat.id === categoryId ? { ...cat, notes: [noteItem, ...cat.notes] } : cat,
       ),
     );
     setSelectedId(created.id);
+    if (isMobile) setMobileView('editor');
   };
 
   const handleToggleChat = () => {
@@ -113,24 +125,106 @@ export default function Home() {
     };
     setChatRooms((prev) => [newChat, ...prev]);
     setSelectedChatId(newChat.id);
+    if (isMobile) setMobileView('chat');
   };
 
+  const handleSelectNote = (id: number) => {
+    setSelectedId(id);
+    setIsChatOpen(false);
+    setSelectedChatId(null);
+    if (isMobile) {
+      setMobileView('editor');
+      setSidebarOpen(false);
+    }
+  };
+
+  const handleSelectChat = (chatId: string) => {
+    setSelectedChatId(chatId);
+    if (isMobile) {
+      setMobileView('chat');
+      setSidebarOpen(false);
+    }
+  };
+
+  const handleMobileBack = () => {
+    setMobileView('list');
+  };
+
+  // 모바일 사이드바 오버레이 (에디터/채팅 뷰에서 햄버거로 열 때)
+  const mobileSidebarOverlay = isMobile && sidebarOpen && mobileView !== 'list' && (
+    <>
+      <div
+        className="fixed inset-0 z-40 bg-black/50"
+        onClick={() => setSidebarOpen(false)}
+      />
+      <aside className="fixed inset-y-0 left-0 z-50 w-72 bg-gray-50 dark:bg-gray-900 shadow-xl overflow-y-auto pt-14">
+        <Sidebar
+          categories={categories}
+          selectedId={selectedId}
+          onSelect={handleSelectNote}
+          onAddNote={handleAddNote}
+          isChatOpen={isChatOpen}
+          onToggleChat={handleToggleChat}
+          chatRooms={chatRooms}
+          selectedChatId={selectedChatId}
+          onSelectChat={handleSelectChat}
+          onAddChat={handleAddChat}
+          onRenameChat={handleRenameChat}
+          forceMobile
+        />
+      </aside>
+    </>
+  );
+
+  // 모바일 레이아웃
+  if (isMobile) {
+    return (
+      <>
+        {mobileSidebarOverlay}
+        {mobileView === 'list' ? (
+          <Sidebar
+            categories={categories}
+            selectedId={selectedId}
+            onSelect={handleSelectNote}
+            onAddNote={handleAddNote}
+            isChatOpen={isChatOpen}
+            onToggleChat={handleToggleChat}
+            chatRooms={chatRooms}
+            selectedChatId={selectedChatId}
+            onSelectChat={handleSelectChat}
+            onAddChat={handleAddChat}
+            onRenameChat={handleRenameChat}
+            forceMobile
+          />
+        ) : mobileView === 'editor' ? (
+          <NoteContent note={selectedNote} onSave={handleSaveNote} onBack={handleMobileBack} />
+        ) : isChatOpen && selectedChat ? (
+          <AiChatPanel
+            chatId={selectedChat.id}
+            chatTitle={selectedChat.title}
+            onClose={() => setSelectedChatId(null)}
+            onBack={handleMobileBack}
+          />
+        ) : (
+          <NoteContent note={selectedNote} onSave={handleSaveNote} onBack={handleMobileBack} />
+        )}
+      </>
+    );
+  }
+
+  // 데스크톱/태블릿 레이아웃
   return (
     <>
       <Sidebar
         categories={categories}
         selectedId={selectedId}
-        onSelect={(id) => {
-          setSelectedId(id);
-          setIsChatOpen(false);
-          setSelectedChatId(null);
-        }}
+        onSelect={handleSelectNote}
         onAddNote={handleAddNote}
         isChatOpen={isChatOpen}
         onToggleChat={handleToggleChat}
         chatRooms={chatRooms}
         selectedChatId={selectedChatId}
-        onSelectChat={setSelectedChatId}
+        onSelectChat={handleSelectChat}
         onAddChat={handleAddChat}
         onRenameChat={handleRenameChat}
       />

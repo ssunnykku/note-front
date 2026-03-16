@@ -17,6 +17,7 @@ interface SidebarProps {
   onSelectChat: (chatId: string) => void;
   onAddChat: (categoryId: number) => void;
   onRenameChat: (chatId: string, title: string) => void;
+  forceMobile?: boolean;
 }
 
 const getCategoryColor = (index: number) => {
@@ -35,6 +36,7 @@ const Sidebar = ({
   onSelectChat,
   onAddChat,
   onRenameChat,
+  forceMobile,
 }: SidebarProps) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
@@ -126,15 +128,63 @@ const Sidebar = ({
     return chatRooms.filter((chat) => chat.categoryId === categoryId);
   };
 
+  const isMobile = !!forceMobile;
+  const effectiveCollapsed = isMobile ? false : isCollapsed;
+
   return (
     <aside
       className={`shrink-0 border-r border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900 overflow-y-auto transition-all duration-300 ${
-        isCollapsed ? 'w-16' : 'w-64'
+        isMobile ? 'w-full' : effectiveCollapsed ? 'w-16' : 'w-64'
       }`}
     >
       {/* 상단 토글 버튼 + 접기 버튼 */}
       <div className="flex items-center justify-between px-4 py-3">
-        {!isCollapsed ? (
+        {isMobile ? (
+          <button
+            onClick={onToggleChat}
+            className="flex items-center gap-1.5 px-2 py-1 rounded transition-colors hover:bg-gray-200 dark:hover:bg-gray-800"
+          >
+            {isChatOpen ? (
+              <>
+                <svg
+                  className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+                <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  기록
+                </span>
+              </>
+            ) : (
+              <>
+                <svg
+                  className="w-3.5 h-3.5 text-accent"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"
+                  />
+                </svg>
+                <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  AI 채팅
+                </span>
+              </>
+            )}
+          </button>
+        ) : !effectiveCollapsed ? (
           <>
             <button
               onClick={onToggleChat}
@@ -221,8 +271,8 @@ const Sidebar = ({
       {isChatOpen ? (
         /* ======= 채팅 모드 ======= */
         <>
-          {!isCollapsed && (
-            <div className="flex items-center gap-2 px-4 py-2">
+          {!effectiveCollapsed && (
+            <div className="flex items-center justify-between px-4 py-2">
               <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                 채팅 목록
               </span>
@@ -238,7 +288,7 @@ const Sidebar = ({
 
               return (
                 <div key={category.id}>
-                  {isCollapsed ? (
+                  {effectiveCollapsed ? (
                     <button
                       onClick={() => setIsCollapsed(false)}
                       className="w-full flex items-center justify-center px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
@@ -378,8 +428,8 @@ const Sidebar = ({
       ) : (
         /* ======= 노트 모드 ======= */
         <>
-          {!isCollapsed && (
-            <div className="flex items-center gap-2 px-4 py-2">
+          {!effectiveCollapsed && (
+            <div className="flex items-center justify-between px-4 py-2">
               <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                 기록
               </span>
@@ -395,7 +445,7 @@ const Sidebar = ({
 
               return (
                 <div key={category.id}>
-                  {isCollapsed ? (
+                  {effectiveCollapsed ? (
                     <button
                       onClick={() => setIsCollapsed(false)}
                       className="w-full flex items-center justify-center px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
