@@ -72,11 +72,16 @@ const NoteContent = ({ note, onSave, onBack }: NoteContentProps) => {
     }
 
     // 새 타이머 시작 - 1초 후 저장
-    debounceTimerRef.current = setTimeout(() => {
+    debounceTimerRef.current = setTimeout(async () => {
       setIsSaving(true);
-      currentOnSave(currentNote.id, title, content);
-      setLastSaved(new Date());
-      setTimeout(() => setIsSaving(false), 500);
+      try {
+        await currentOnSave(currentNote.id, title, content);
+        setLastSaved(new Date());
+      } catch (err) {
+        console.error('자동 저장 실패:', err);
+      } finally {
+        setIsSaving(false);
+      }
     }, 1000);
 
     // 컴포넌트 언마운트 시 타이머 정리
@@ -135,18 +140,15 @@ const NoteContent = ({ note, onSave, onBack }: NoteContentProps) => {
           <div className="flex items-center gap-2 shrink-0">
           </div>
         </div>
-        <div className="mt-2 text-xs">
+        <div className="flex items-center gap-2 mt-2 text-xs">
+          <span className="text-gray-300 dark:text-gray-700">•</span>
           {isSaving ? (
             <span className="text-gray-500 dark:text-gray-400">저장 중...</span>
           ) : lastSaved ? (
-            <span className="text-gray-400 dark:text-gray-500">
+            <span className="text-gray-600 dark:text-gray-300">
               자동 저장됨 ({lastSaved.toLocaleTimeString()})
             </span>
-          ) : (
-            <span className="text-gray-400 dark:text-gray-500">
-              마지막 수정: {formatDateTime(note.updatedAt)}
-            </span>
-          )}
+          ) : null}
         </div>
       </div>
 
