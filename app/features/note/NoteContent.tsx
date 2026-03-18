@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import type { ComponentType } from 'react';
 import { marked } from 'marked';
 import type { Note } from './types';
-import { formatDateTime } from '~/lib/formatDate';
 
 interface NoteContentProps {
   note: Note | null;
@@ -137,8 +136,7 @@ const NoteContent = ({ note, onSave, onBack }: NoteContentProps) => {
             className="flex-1 text-2xl font-bold bg-transparent border-none outline-none text-gray-900 dark:text-white placeholder:text-gray-400"
             placeholder="제목 없음"
           />
-          <div className="flex items-center gap-2 shrink-0">
-          </div>
+          <div className="flex items-center gap-2 shrink-0"></div>
         </div>
         <div className="flex items-center gap-2 mt-2 text-xs">
           <span className="text-gray-300 dark:text-gray-700">•</span>
