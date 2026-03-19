@@ -26,6 +26,7 @@ export default function Home() {
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [mobileView, setMobileView] = useState<'list' | 'editor' | 'chat'>('list');
+  const [pendingNoteIds, setPendingNoteIds] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     const userId = localStorage.getItem('userId') || '550e8400-e29b-41d4-a716-446655440000';
@@ -46,60 +47,118 @@ export default function Home() {
 
   useEffect(() => {
     if (selectedId === null) return;
+    // 아직 서버에 생성되지 않은 임시 노트는 API 호출하지 않음
+    if (pendingNoteIds.has(selectedId)) return;
     notesApi
       .getById(selectedId)
       .then(setSelectedNote)
       .catch(() => setSelectedNote(null));
-  }, [selectedId]);
+  }, [selectedId, pendingNoteIds]);
 
   const selectedChat = chatRooms.find((c) => c.id === selectedChatId) ?? null;
 
   const handleSaveNote = async (noteId: number, title: string, content: string) => {
     try {
       const categoryId = categories.find((cat) => cat.notes.some((n) => n.id === noteId))?.id;
-      const updated = await notesApi.update(noteId, { title, content, categoryId });
-      setCategories((prev) =>
-        prev.map((cat) => ({
-          ...cat,
-          notes: cat.notes.map((note) =>
-            note.id === noteId
-              ? { ...note, title: updated.title, updatedAt: updated.updatedAt }
-              : note,
-          ),
-        })),
-      );
-      setSelectedNote((prev) =>
-        prev && prev.id === noteId
-          ? { ...prev, title: updated.title, updatedAt: updated.updatedAt }
-          : prev,
-      );
+
+      if (pendingNoteIds.has(noteId)) {
+        // 아직 서버에 생성되지 않은 노트 → create API 호출
+        const userId =
+          localStorage.getItem('userId') || '550e8400-e29b-41d4-a716-446655440000';
+        const created = await notesApi.create({
+          userId,
+          title,
+          content,
+          categoryId: categoryId!,
+        });
+        // pending에서 제거
+        setPendingNoteIds((prev) => {
+          const next = new Set(prev);
+          next.delete(noteId);
+          return next;
+        });
+        // 카테고리 내 임시 노트를 실제 노트로 교체
+        setCategories((prev) =>
+          prev.map((cat) => ({
+            ...cat,
+            notes: cat.notes.map((note) =>
+              note.id === noteId
+                ? {
+                    ...note,
+                    id: created.id,
+                    title: created.title,
+                    updatedAt: created.updatedAt,
+                  }
+                : note,
+            ),
+          })),
+        );
+        setSelectedId(created.id);
+        setSelectedNote((prev) =>
+          prev && prev.id === noteId
+            ? { ...created }
+            : prev,
+        );
+      } else {
+        // 기존 노트 → update API 호출
+        const updated = await notesApi.update(noteId, { title, content, categoryId });
+        setCategories((prev) =>
+          prev.map((cat) => ({
+            ...cat,
+            notes: cat.notes.map((note) =>
+              note.id === noteId
+                ? { ...note, title: updated.title, updatedAt: updated.updatedAt }
+                : note,
+            ),
+          })),
+        );
+        setSelectedNote((prev) =>
+          prev && prev.id === noteId
+            ? { ...prev, title: updated.title, updatedAt: updated.updatedAt }
+            : prev,
+        );
+      }
     } catch (err) {
       console.error('노트 저장 실패:', err);
     }
   };
 
-  const handleAddNote = async (categoryId: number) => {
+  const handleAddNote = (categoryId: number) => {
     const userId = localStorage.getItem('userId') || '550e8400-e29b-41d4-a716-446655440000';
-    const created = await notesApi.create({
+    const tempId = -Date.now();
+    const now = new Date().toISOString();
+    const noteItem = {
+      id: tempId,
       userId,
       title: '새 노트',
-      content: '',
-      categoryId,
-    });
-    const noteItem = {
-      id: created.id,
-      userId: created.userId,
-      title: created.title,
-      createdAt: created.createdAt,
-      updatedAt: created.updatedAt,
+      createdAt: now,
+      updatedAt: now,
     };
+    setPendingNoteIds((prev) => new Set(prev).add(tempId));
     setCategories((prev) =>
       prev.map((cat) =>
         cat.id === categoryId ? { ...cat, notes: [noteItem, ...cat.notes] } : cat,
       ),
     );
-    setSelectedId(created.id);
+    setSelectedId(tempId);
+    setSelectedNote({
+      id: tempId,
+      userId,
+      title: '새 노트',
+      content: '',
+      createdAt: now,
+      updatedAt: now,
+    });
     if (isMobile) setMobileView('editor');
+  };
+
+  const handleAddCategory = async (name: string) => {
+    try {
+      const created = await categoriesApi.create({ name });
+      setCategories((prev) => [...prev, { ...created, notes: created.notes ?? [] }]);
+    } catch (err) {
+      console.error('카테고리 생성 실패:', err);
+    }
   };
 
   const handleToggleChat = () => {
@@ -134,6 +193,21 @@ export default function Home() {
   };
 
   const handleSelectNote = (id: number) => {
+    // 편집하지 않은 빈 새 노트는 목록에서 제거
+    if (selectedId !== null && selectedId !== id && pendingNoteIds.has(selectedId)) {
+      const pendingId = selectedId;
+      setPendingNoteIds((prev) => {
+        const next = new Set(prev);
+        next.delete(pendingId);
+        return next;
+      });
+      setCategories((prev) =>
+        prev.map((cat) => ({
+          ...cat,
+          notes: cat.notes.filter((n) => n.id !== pendingId),
+        })),
+      );
+    }
     setSelectedId(id);
     setIsChatOpen(false);
     setSelectedChatId(null);
@@ -162,7 +236,7 @@ export default function Home() {
         className="fixed inset-0 z-40 bg-black/50"
         onClick={() => setSidebarOpen(false)}
       />
-      <aside className="fixed inset-y-0 left-0 z-50 w-72 bg-gray-50 dark:bg-gray-900 shadow-xl overflow-y-auto pt-14">
+      <aside className="fixed inset-y-0 left-0 z-50 w-72 bg-gray-50 dark:bg-gray-900 shadow-xl pt-14">
         <Sidebar
           categories={categories}
           selectedId={selectedId}
@@ -175,6 +249,8 @@ export default function Home() {
           onSelectChat={handleSelectChat}
           onAddChat={handleAddChat}
           onRenameChat={handleRenameChat}
+          onAddCategory={handleAddCategory}
+          pendingNoteIds={pendingNoteIds}
           forceMobile
         />
       </aside>
@@ -199,10 +275,12 @@ export default function Home() {
             onSelectChat={handleSelectChat}
             onAddChat={handleAddChat}
             onRenameChat={handleRenameChat}
+          onAddCategory={handleAddCategory}
+          pendingNoteIds={pendingNoteIds}
             forceMobile
           />
         ) : mobileView === 'editor' ? (
-          <NoteContent note={selectedNote} onSave={handleSaveNote} onBack={handleMobileBack} />
+          <NoteContent note={selectedNote} onSave={handleSaveNote} onBack={handleMobileBack} isPending={selectedNote ? pendingNoteIds.has(selectedNote.id) : false} />
         ) : isChatOpen && selectedChat ? (
           <AiChatPanel
             chatId={selectedChat.id}
@@ -211,7 +289,7 @@ export default function Home() {
             onBack={handleMobileBack}
           />
         ) : (
-          <NoteContent note={selectedNote} onSave={handleSaveNote} onBack={handleMobileBack} />
+          <NoteContent note={selectedNote} onSave={handleSaveNote} onBack={handleMobileBack} isPending={selectedNote ? pendingNoteIds.has(selectedNote.id) : false} />
         )}
       </>
     );
@@ -225,6 +303,8 @@ export default function Home() {
         selectedId={selectedId}
         onSelect={handleSelectNote}
         onAddNote={handleAddNote}
+        onAddCategory={handleAddCategory}
+        pendingNoteIds={pendingNoteIds}
         isChatOpen={isChatOpen}
         onToggleChat={handleToggleChat}
         chatRooms={chatRooms}
@@ -252,7 +332,7 @@ export default function Home() {
           <p className="text-sm">왼쪽 목록에서 채팅을 선택하거나 추가해주세요</p>
         </div>
       ) : (
-        <NoteContent note={selectedNote} onSave={handleSaveNote} />
+        <NoteContent note={selectedNote} onSave={handleSaveNote} isPending={selectedNote ? pendingNoteIds.has(selectedNote.id) : false} />
       )}
     </>
   );

@@ -7,13 +7,17 @@ interface NoteContentProps {
   note: Note | null;
   onSave?: (noteId: number, title: string, content: string) => void;
   onBack?: () => void;
+  isPending?: boolean;
 }
 
-const NoteContent = ({ note, onSave, onBack }: NoteContentProps) => {
+const NoteContent = ({ note, onSave, onBack, isPending }: NoteContentProps) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [hasEdited, setHasEdited] = useState(false);
+  const initialTitleRef = useRef('');
+  const initialContentRef = useRef('');
   const [TipTapEditor, setTipTapEditor] = useState<ComponentType<{
     content: string;
     onChange: (content: string) => void;
@@ -43,6 +47,11 @@ const NoteContent = ({ note, onSave, onBack }: NoteContentProps) => {
       ? note.content
       : (marked.parse(note.content) as string);
     setContent(htmlContent);
+    // 초기값 저장 (신규 노트 변경 감지용)
+    initialTitleRef.current = note.title;
+    initialContentRef.current = htmlContent;
+    setHasEdited(false);
+    setLastSaved(null);
     // 로드된 노트 ID를 기록하여 자동저장 방지
     loadedNoteIdRef.current = note.id;
   }, [note]);
@@ -64,6 +73,13 @@ const NoteContent = ({ note, onSave, onBack }: NoteContentProps) => {
       loadedNoteIdRef.current = null;
       return;
     }
+
+    // 신규 노트: 초기값에서 변경이 없으면 저장하지 않음
+    const titleChanged = title !== initialTitleRef.current;
+    const contentChanged = content !== initialContentRef.current;
+    if (isPending && !titleChanged && !contentChanged) return;
+
+    if (!hasEdited) setHasEdited(true);
 
     // 기존 타이머가 있으면 취소 (타이핑 계속하면 계속 리셋)
     if (debounceTimerRef.current) {
@@ -89,7 +105,7 @@ const NoteContent = ({ note, onSave, onBack }: NoteContentProps) => {
         clearTimeout(debounceTimerRef.current);
       }
     };
-  }, [content, title]);
+  }, [content, title, isPending]);
 
   const handleContentChange = (newContent: string) => {
     setContent(newContent);
@@ -138,16 +154,24 @@ const NoteContent = ({ note, onSave, onBack }: NoteContentProps) => {
           />
           <div className="flex items-center gap-2 shrink-0"></div>
         </div>
-        <div className="flex items-center gap-2 mt-2 text-xs">
-          <span className="text-gray-300 dark:text-gray-700">•</span>
-          {isSaving ? (
-            <span className="text-gray-500 dark:text-gray-400">저장 중...</span>
-          ) : lastSaved ? (
-            <span className="text-gray-600 dark:text-gray-300">
-              자동 저장됨 ({lastSaved.toLocaleTimeString()})
-            </span>
-          ) : null}
-        </div>
+        {isPending && !hasEdited ? (
+          <div className="mt-2 text-xs text-gray-400 dark:text-gray-500">작성중</div>
+        ) : (
+          <div className="flex items-center gap-2 mt-2 text-xs">
+            <span className="text-gray-300 dark:text-gray-700">•</span>
+            {isSaving ? (
+              <span className="text-gray-500 dark:text-gray-400">저장 중...</span>
+            ) : lastSaved ? (
+              <span className="text-gray-600 dark:text-gray-300">
+                자동 저장됨 ({lastSaved.toLocaleTimeString()})
+              </span>
+            ) : (
+              <span className="text-gray-400 dark:text-gray-500">
+                자동 저장됨 ({note.updatedAt ? new Date(note.updatedAt).toLocaleTimeString() : ''})
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 컨텐츠 영역 */}

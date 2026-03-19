@@ -10,6 +10,8 @@ interface SidebarProps {
   selectedId: number | null;
   onSelect: (id: number) => void;
   onAddNote?: (categoryId: number) => void;
+  onAddCategory?: (name: string) => void;
+  pendingNoteIds?: Set<number>;
   isChatOpen: boolean;
   onToggleChat: () => void;
   chatRooms: ChatRoom[];
@@ -29,6 +31,8 @@ const Sidebar = ({
   selectedId,
   onSelect,
   onAddNote,
+  onAddCategory,
+  pendingNoteIds,
   isChatOpen,
   onToggleChat,
   chatRooms,
@@ -42,8 +46,9 @@ const Sidebar = ({
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
   const editInputRef = useRef<HTMLInputElement>(null);
-
-  console.log('넘어오는 값 확인: ', categories);
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const newCategoryInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (editingChatId) {
@@ -51,6 +56,25 @@ const Sidebar = ({
       editInputRef.current?.select();
     }
   }, [editingChatId]);
+
+  useEffect(() => {
+    if (isAddingCategory) {
+      newCategoryInputRef.current?.focus();
+    }
+  }, [isAddingCategory]);
+
+  const commitNewCategory = () => {
+    if (newCategoryName.trim() && onAddCategory) {
+      onAddCategory(newCategoryName.trim());
+    }
+    setIsAddingCategory(false);
+    setNewCategoryName('');
+  };
+
+  const cancelNewCategory = () => {
+    setIsAddingCategory(false);
+    setNewCategoryName('');
+  };
 
   const startRename = (chatId: string, currentTitle: string) => {
     setEditingChatId(chatId);
@@ -133,7 +157,7 @@ const Sidebar = ({
 
   return (
     <aside
-      className={`shrink-0 border-r border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900 overflow-y-auto transition-all duration-300 ${
+      className={`shrink-0 h-full border-r border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900 flex flex-col transition-all duration-300 ${
         isMobile ? 'w-full' : effectiveCollapsed ? 'w-16' : 'w-64'
       }`}
     >
@@ -270,7 +294,7 @@ const Sidebar = ({
 
       {isChatOpen ? (
         /* ======= 채팅 모드 ======= */
-        <>
+        <div className="flex-1 overflow-y-auto">
           {!effectiveCollapsed && (
             <div className="flex items-center justify-between px-4 py-2">
               <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
@@ -424,10 +448,10 @@ const Sidebar = ({
               );
             })}
           </div>
-        </>
+        </div>
       ) : (
         /* ======= 노트 모드 ======= */
-        <>
+        <div className="flex-1 overflow-y-auto">
           {!effectiveCollapsed && (
             <div className="flex items-center justify-between px-4 py-2">
               <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
@@ -550,7 +574,7 @@ const Sidebar = ({
                               {note.title}
                             </p>
                             <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                              {formatDateTime(note.updatedAt)}
+                              {pendingNoteIds?.has(note.id) ? '작성중' : formatDateTime(note.updatedAt)}
                             </p>
                           </button>
                         </li>
@@ -560,8 +584,69 @@ const Sidebar = ({
                 </div>
               );
             })}
+
+            {/* 인라인 카테고리 입력 행 */}
+            {!effectiveCollapsed && isAddingCategory && (
+              <div className="flex items-center gap-2 px-4 py-2">
+                <svg
+                  className="w-4 h-4 text-gray-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+                <div
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: getCategoryColor(categories.length) }}
+                />
+                <input
+                  ref={newCategoryInputRef}
+                  type="text"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  onBlur={commitNewCategory}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') commitNewCategory();
+                    if (e.key === 'Escape') cancelNewCategory();
+                  }}
+                  placeholder="카테고리 이름"
+                  className="flex-1 min-w-0 text-sm font-medium bg-transparent border-b border-gray-400 dark:border-gray-500 outline-none text-gray-900 dark:text-white placeholder:text-gray-400"
+                />
+              </div>
+            )}
           </div>
-        </>
+        </div>
+      )}
+
+      {/* + New Category 버튼 */}
+      {!effectiveCollapsed && onAddCategory && !isAddingCategory && (
+        <div className="shrink-0 border-t border-gray-200 dark:border-gray-800 p-3">
+          <button
+            onClick={() => setIsAddingCategory(true)}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v16m8-8H4"
+              />
+            </svg>
+            New Category
+          </button>
+        </div>
       )}
     </aside>
   );
