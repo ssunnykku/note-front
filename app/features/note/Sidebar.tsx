@@ -14,9 +14,9 @@ interface SidebarProps {
   onDeleteNote?: (noteId: number) => void;
   onQuickMemo?: () => void;
   uncategorizedNotes?: CategoryNoteItem[];
-  trashNotes?: CategoryNoteItem[];
-  onSelectTrashNote?: (noteId: number) => void;
-  selectedTrashNoteId?: number | null;
+  trashNoteCount?: number;
+  onOpenTrash?: () => void;
+  isTrashActive?: boolean;
   pendingNoteIds?: Set<number>;
   isChatOpen: boolean;
   onToggleChat: () => void;
@@ -41,9 +41,9 @@ const Sidebar = ({
   onDeleteNote,
   onQuickMemo,
   uncategorizedNotes = [],
-  trashNotes = [],
-  onSelectTrashNote,
-  selectedTrashNoteId,
+  trashNoteCount = 0,
+  onOpenTrash,
+  isTrashActive,
   pendingNoteIds,
   isChatOpen,
   onToggleChat,
@@ -62,7 +62,6 @@ const Sidebar = ({
   const [newCategoryName, setNewCategoryName] = useState('');
   const newCategoryInputRef = useRef<HTMLInputElement>(null);
   const [isUncategorizedOpen, setIsUncategorizedOpen] = useState(true);
-  const [isTrashOpen, setIsTrashOpen] = useState(false);
 
   useEffect(() => {
     if (editingChatId) {
@@ -172,17 +171,15 @@ const Sidebar = ({
   const totalNoteCount =
     categories.reduce((sum, cat) => sum + cat.notes.length, 0) + uncategorizedNotes.length;
 
-  // 노트 항목 렌더링 (공통)
-  const renderNoteItem = (note: CategoryNoteItem, isTrash = false) => {
-    const isSelected = isTrash
-      ? selectedTrashNoteId === note.id
-      : selectedId === note.id;
+  // 노트 항목 렌더링
+  const renderNoteItem = (note: CategoryNoteItem) => {
+    const isSelected = selectedId === note.id;
 
     return (
       <li key={note.id}>
         <div className="group/note relative">
           <button
-            onClick={() => isTrash ? onSelectTrashNote?.(note.id) : onSelect(note.id)}
+            onClick={() => onSelect(note.id)}
             className={`w-full text-left pl-10 pr-4 py-3 border-b border-gray-100 dark:border-gray-800 transition-colors ${
               isSelected
                 ? 'bg-white dark:bg-gray-800'
@@ -199,13 +196,12 @@ const Sidebar = ({
               {note.title}
             </p>
             <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-              {!isTrash && pendingNoteIds?.has(note.id)
+              {pendingNoteIds?.has(note.id)
                 ? '작성중'
                 : formatDateTime(note.updatedAt)}
             </p>
           </button>
-          {/* 삭제 버튼 (휴지통이 아닌 경우만) */}
-          {!isTrash && onDeleteNote && (
+          {onDeleteNote && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -766,37 +762,18 @@ const Sidebar = ({
             )}
           </div>
 
-          {/* 휴지통 섹션 */}
-          {!effectiveCollapsed && (
+          {/* 휴지통 버튼 */}
+          {!effectiveCollapsed && onOpenTrash && (
             <div className="mt-2 border-t border-gray-200 dark:border-gray-800">
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={() => setIsTrashOpen((prev) => !prev)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    setIsTrashOpen((prev) => !prev);
-                  }
-                }}
-                className="w-full flex items-center justify-between px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
+              <button
+                onClick={onOpenTrash}
+                className={`w-full flex items-center justify-between px-4 py-2 transition-colors cursor-pointer ${
+                  isTrashActive
+                    ? 'bg-gray-100 dark:bg-gray-800'
+                    : 'hover:bg-gray-100 dark:hover:bg-gray-800/50'
+                }`}
               >
                 <div className="flex items-center gap-2">
-                  <svg
-                    className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${
-                      isTrashOpen ? 'rotate-90' : ''
-                    }`}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
                   <svg
                     className="w-4 h-4 text-gray-400 dark:text-gray-500"
                     fill="none"
@@ -814,20 +791,12 @@ const Sidebar = ({
                     휴지통
                   </span>
                 </div>
-                {trashNotes.length > 0 && (
+                {trashNoteCount > 0 && (
                   <span className="text-xs text-gray-400 dark:text-gray-500">
-                    {trashNotes.length}
+                    {trashNoteCount}
                   </span>
                 )}
-              </div>
-              {isTrashOpen && trashNotes.length > 0 && (
-                <ul>{trashNotes.map((note) => renderNoteItem(note, true))}</ul>
-              )}
-              {isTrashOpen && trashNotes.length === 0 && (
-                <p className="px-10 py-3 text-xs text-gray-400 dark:text-gray-500">
-                  비어 있음
-                </p>
-              )}
+              </button>
             </div>
           )}
         </div>

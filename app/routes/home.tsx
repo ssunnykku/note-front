@@ -3,10 +3,42 @@ import { useOutletContext } from 'react-router';
 import Sidebar from '~/features/note/Sidebar';
 import NoteContent from '~/features/note/NoteContent';
 import TrashNoteContent from '~/features/note/TrashNoteContent';
+import TrashListView from '~/features/note/TrashListView';
 import AiChatPanel from '~/features/ai/AiChatPanel';
 import { categoriesApi } from '~/lib/api/categories';
 import { notesApi } from '~/lib/api/notes';
 import type { Note, Category, CategoryNoteItem, ChatRoom } from '~/features/note/types';
+
+// 더미 휴지통 데이터
+const DUMMY_TRASH_NOTES: CategoryNoteItem[] = [
+  {
+    id: -9001,
+    userId: '550e8400-e29b-41d4-a716-446655440000',
+    title: '프로젝트 회의 메모',
+    createdAt: '2026-03-10T09:00:00.000Z',
+    updatedAt: '2026-03-15T14:30:00.000Z',
+    deletedAt: '2026-03-18T10:22:00.000Z',
+    contentPreview: 'Q1 목표 정리, 디자인 시스템 마이그레이션 일정 논의...',
+  },
+  {
+    id: -9002,
+    userId: '550e8400-e29b-41d4-a716-446655440000',
+    title: 'API 엔드포인트 정리',
+    createdAt: '2026-03-05T11:00:00.000Z',
+    updatedAt: '2026-03-12T16:45:00.000Z',
+    deletedAt: '2026-03-17T08:15:00.000Z',
+    contentPreview: 'GET /notes, POST /notes, PATCH /notes/:id, DELETE /notes/:id...',
+  },
+  {
+    id: -9003,
+    userId: '550e8400-e29b-41d4-a716-446655440000',
+    title: '읽을 책 목록',
+    createdAt: '2026-02-20T08:00:00.000Z',
+    updatedAt: '2026-03-01T12:00:00.000Z',
+    deletedAt: '2026-03-16T19:30:00.000Z',
+    contentPreview: '1. Clean Architecture 2. 도메인 주도 설계 3. 리팩터링...',
+  },
+];
 
 interface LayoutContext {
   isMobile: boolean;
@@ -29,7 +61,8 @@ export default function Home() {
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [mobileView, setMobileView] = useState<'list' | 'editor' | 'chat'>('list');
   const [pendingNoteIds, setPendingNoteIds] = useState<Set<number>>(new Set());
-  const [trashNotes, setTrashNotes] = useState<CategoryNoteItem[]>([]);
+  const [trashNotes, setTrashNotes] = useState<CategoryNoteItem[]>(DUMMY_TRASH_NOTES);
+  const [isTrashView, setIsTrashView] = useState(false);
   const [selectedTrashNoteId, setSelectedTrashNoteId] = useState<number | null>(null);
   const [selectedTrashNote, setSelectedTrashNote] = useState<Note | null>(null);
 
@@ -249,13 +282,31 @@ export default function Home() {
   };
 
   const handleRestoreNote = async (noteId: number) => {
+    // 더미 데이터 (음수 id)는 로컬에서만 처리
+    if (noteId < 0) {
+      const trashNote = trashNotes.find((n) => n.id === noteId);
+      setTrashNotes((prev) => prev.filter((n) => n.id !== noteId));
+      if (selectedTrashNoteId === noteId) {
+        setSelectedTrashNoteId(null);
+        setSelectedTrashNote(null);
+      }
+      if (trashNote) {
+        setUncategorizedNotes((prev) => [
+          { ...trashNote, deletedAt: undefined },
+          ...prev,
+        ]);
+      }
+      return;
+    }
+
     try {
       const restored = await notesApi.restore(noteId);
       setTrashNotes((prev) => prev.filter((n) => n.id !== noteId));
-      setSelectedTrashNoteId(null);
-      setSelectedTrashNote(null);
+      if (selectedTrashNoteId === noteId) {
+        setSelectedTrashNoteId(null);
+        setSelectedTrashNote(null);
+      }
 
-      // 복원된 노트를 미분류에 추가 (원래 카테고리 정보가 없으므로)
       setUncategorizedNotes((prev) => [
         {
           id: restored.id,
@@ -272,6 +323,16 @@ export default function Home() {
   };
 
   const handlePermanentDelete = async (noteId: number) => {
+    // 더미 데이터 (음수 id)는 로컬에서만 처리
+    if (noteId < 0) {
+      setTrashNotes((prev) => prev.filter((n) => n.id !== noteId));
+      if (selectedTrashNoteId === noteId) {
+        setSelectedTrashNoteId(null);
+        setSelectedTrashNote(null);
+      }
+      return;
+    }
+
     try {
       await notesApi.permanentDelete(noteId);
       setTrashNotes((prev) => prev.filter((n) => n.id !== noteId));
@@ -284,14 +345,22 @@ export default function Home() {
     }
   };
 
-  const handleSelectTrashNote = (noteId: number) => {
-    setSelectedTrashNoteId(noteId);
+  const handleOpenTrash = () => {
+    setIsTrashView(true);
+    setSelectedTrashNoteId(null);
+    setSelectedTrashNote(null);
     setSelectedId(null);
     setSelectedNote(null);
+    setIsChatOpen(false);
+    setSelectedChatId(null);
     if (isMobile) {
       setMobileView('editor');
       setSidebarOpen(false);
     }
+  };
+
+  const handleSelectTrashNote = (noteId: number) => {
+    setSelectedTrashNoteId(noteId);
   };
 
   const handleAddCategory = async (name: string) => {
@@ -352,7 +421,9 @@ export default function Home() {
       setUncategorizedNotes((prev) => prev.filter((n) => n.id !== pendingId));
     }
     setSelectedId(id);
+    setIsTrashView(false);
     setSelectedTrashNoteId(null);
+    setSelectedTrashNote(null);
     setIsChatOpen(false);
     setSelectedChatId(null);
     if (isMobile) {
@@ -375,10 +446,25 @@ export default function Home() {
 
   // 현재 보여줄 메인 컨텐츠 결정
   const renderMainContent = (onBack?: () => void) => {
-    if (selectedTrashNoteId !== null) {
+    if (isTrashView) {
+      if (selectedTrashNoteId !== null) {
+        return (
+          <TrashNoteContent
+            note={selectedTrashNote}
+            onRestore={handleRestoreNote}
+            onPermanentDelete={handlePermanentDelete}
+            onBack={() => {
+              setSelectedTrashNoteId(null);
+              setSelectedTrashNote(null);
+            }}
+          />
+        );
+      }
       return (
-        <TrashNoteContent
-          note={selectedTrashNote}
+        <TrashListView
+          trashNotes={trashNotes}
+          selectedId={selectedTrashNoteId}
+          onSelect={handleSelectTrashNote}
           onRestore={handleRestoreNote}
           onPermanentDelete={handlePermanentDelete}
           onBack={onBack}
@@ -430,9 +516,9 @@ export default function Home() {
     onDeleteNote: handleDeleteNote,
     onQuickMemo: handleQuickMemo,
     uncategorizedNotes,
-    trashNotes,
-    onSelectTrashNote: handleSelectTrashNote,
-    selectedTrashNoteId,
+    trashNoteCount: trashNotes.length,
+    onOpenTrash: handleOpenTrash,
+    isTrashActive: isTrashView,
     pendingNoteIds,
     isChatOpen,
     onToggleChat: handleToggleChat,

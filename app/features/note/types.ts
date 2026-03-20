@@ -5,6 +5,7 @@ export interface CategoryNoteItem {
   createdAt: string;
   updatedAt: string;
   deletedAt?: string;
+  contentPreview?: string;
 }
 
 export interface Category {
