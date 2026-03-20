@@ -6,11 +6,12 @@ import type { Note } from './types';
 interface NoteContentProps {
   note: Note | null;
   onSave?: (noteId: number, title: string, content: string) => void;
+  onDelete?: (noteId: number) => void;
   onBack?: () => void;
   isPending?: boolean;
 }
 
-const NoteContent = ({ note, onSave, onBack, isPending }: NoteContentProps) => {
+const NoteContent = ({ note, onSave, onDelete, onBack, isPending }: NoteContentProps) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -152,7 +153,29 @@ const NoteContent = ({ note, onSave, onBack, isPending }: NoteContentProps) => {
             className="flex-1 text-2xl font-bold bg-transparent border-none outline-none text-gray-900 dark:text-white placeholder:text-gray-400"
             placeholder="제목 없음"
           />
-          <div className="flex items-center gap-2 shrink-0"></div>
+          <div className="flex items-center gap-2 shrink-0">
+            {onDelete && note && (
+              <button
+                onClick={() => onDelete(note.id)}
+                className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                aria-label="노트 삭제"
+              >
+                <svg
+                  className="w-4.5 h-4.5 text-gray-400 hover:text-red-500 dark:hover:text-red-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
         {isPending && !hasEdited ? (
           <div className="mt-2 text-xs text-gray-400 dark:text-gray-500">작성중</div>

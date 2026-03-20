@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import type { Category, ChatRoom } from './types';
+import type { Category, CategoryNoteItem, ChatRoom } from './types';
 import Palette from '~/lib/palette';
 import { formatDateTime } from '~/lib/formatDate';
 
@@ -11,6 +11,12 @@ interface SidebarProps {
   onSelect: (id: number) => void;
   onAddNote?: (categoryId: number) => void;
   onAddCategory?: (name: string) => void;
+  onDeleteNote?: (noteId: number) => void;
+  onQuickMemo?: () => void;
+  uncategorizedNotes?: CategoryNoteItem[];
+  trashNotes?: CategoryNoteItem[];
+  onSelectTrashNote?: (noteId: number) => void;
+  selectedTrashNoteId?: number | null;
   pendingNoteIds?: Set<number>;
   isChatOpen: boolean;
   onToggleChat: () => void;
@@ -32,6 +38,12 @@ const Sidebar = ({
   onSelect,
   onAddNote,
   onAddCategory,
+  onDeleteNote,
+  onQuickMemo,
+  uncategorizedNotes = [],
+  trashNotes = [],
+  onSelectTrashNote,
+  selectedTrashNoteId,
   pendingNoteIds,
   isChatOpen,
   onToggleChat,
@@ -49,6 +61,8 @@ const Sidebar = ({
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const newCategoryInputRef = useRef<HTMLInputElement>(null);
+  const [isUncategorizedOpen, setIsUncategorizedOpen] = useState(true);
+  const [isTrashOpen, setIsTrashOpen] = useState(false);
 
   useEffect(() => {
     if (editingChatId) {
@@ -154,6 +168,71 @@ const Sidebar = ({
 
   const isMobile = !!forceMobile;
   const effectiveCollapsed = isMobile ? false : isCollapsed;
+
+  const totalNoteCount =
+    categories.reduce((sum, cat) => sum + cat.notes.length, 0) + uncategorizedNotes.length;
+
+  // 노트 항목 렌더링 (공통)
+  const renderNoteItem = (note: CategoryNoteItem, isTrash = false) => {
+    const isSelected = isTrash
+      ? selectedTrashNoteId === note.id
+      : selectedId === note.id;
+
+    return (
+      <li key={note.id}>
+        <div className="group/note relative">
+          <button
+            onClick={() => isTrash ? onSelectTrashNote?.(note.id) : onSelect(note.id)}
+            className={`w-full text-left pl-10 pr-4 py-3 border-b border-gray-100 dark:border-gray-800 transition-colors ${
+              isSelected
+                ? 'bg-white dark:bg-gray-800'
+                : 'hover:bg-gray-100 dark:hover:bg-gray-800/50'
+            }`}
+          >
+            <p
+              className={`text-sm font-medium truncate pr-6 ${
+                isSelected
+                  ? 'text-gray-900 dark:text-white'
+                  : 'text-gray-700 dark:text-gray-300'
+              }`}
+            >
+              {note.title}
+            </p>
+            <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+              {!isTrash && pendingNoteIds?.has(note.id)
+                ? '작성중'
+                : formatDateTime(note.updatedAt)}
+            </p>
+          </button>
+          {/* 삭제 버튼 (휴지통이 아닌 경우만) */}
+          {!isTrash && onDeleteNote && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDeleteNote(note.id);
+              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/note:opacity-100 p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-all"
+              aria-label="노트 삭제"
+            >
+              <svg
+                className="w-3.5 h-3.5 text-gray-400 hover:text-red-500 dark:hover:text-red-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                />
+              </svg>
+            </button>
+          )}
+        </div>
+      </li>
+    );
+  };
 
   return (
     <aside
@@ -452,16 +531,107 @@ const Sidebar = ({
       ) : (
         /* ======= 노트 모드 ======= */
         <div className="flex-1 overflow-y-auto">
+          {/* 빠른 메모 버튼 */}
+          {!effectiveCollapsed && onQuickMemo && (
+            <div className="px-3 pb-2">
+              <button
+                onClick={onQuickMemo}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                빠른 메모
+              </button>
+            </div>
+          )}
+
           {!effectiveCollapsed && (
             <div className="flex items-center justify-between px-4 py-2">
               <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                 기록
               </span>
-              <span className="text-xs text-gray-400 dark:text-gray-500">
-                {categories.reduce((sum, cat) => sum + cat.notes.length, 0)}
-              </span>
+              <span className="text-xs text-gray-400 dark:text-gray-500">{totalNoteCount}</span>
             </div>
           )}
+
+          {/* 미분류 섹션 */}
+          {!effectiveCollapsed && uncategorizedNotes.length > 0 && (
+            <div>
+              <div className="group">
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setIsUncategorizedOpen((prev) => !prev)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setIsUncategorizedOpen((prev) => !prev);
+                    }
+                  }}
+                  className={`w-full flex items-center justify-between px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors cursor-pointer ${
+                    !isUncategorizedOpen &&
+                    selectedId !== null &&
+                    uncategorizedNotes.some((n) => n.id === selectedId)
+                      ? 'bg-gray-100 dark:bg-gray-800/50'
+                      : ''
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <svg
+                      className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${
+                        isUncategorizedOpen ? 'rotate-90' : ''
+                      }`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                    <svg
+                      className="w-4 h-4 text-gray-400 dark:text-gray-500"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      미분류
+                    </span>
+                  </div>
+                  <span className="text-xs text-gray-400 dark:text-gray-500">
+                    {uncategorizedNotes.length}
+                  </span>
+                </div>
+              </div>
+              {isUncategorizedOpen && (
+                <ul>{uncategorizedNotes.map((note) => renderNoteItem(note))}</ul>
+              )}
+            </div>
+          )}
+
+          {/* 카테고리 목록 */}
           <div>
             {categories.map((category, categoryIndex) => {
               const isOpen = openCategories.has(category.id);
@@ -553,33 +723,7 @@ const Sidebar = ({
                   )}
 
                   {!isCollapsed && isOpen && (
-                    <ul>
-                      {category.notes.map((note) => (
-                        <li key={note.id}>
-                          <button
-                            onClick={() => onSelect(note.id)}
-                            className={`w-full text-left pl-10 pr-4 py-3 border-b border-gray-100 dark:border-gray-800 transition-colors ${
-                              selectedId === note.id
-                                ? 'bg-white dark:bg-gray-800'
-                                : 'hover:bg-gray-100 dark:hover:bg-gray-800/50'
-                            }`}
-                          >
-                            <p
-                              className={`text-sm font-medium truncate ${
-                                selectedId === note.id
-                                  ? 'text-gray-900 dark:text-white'
-                                  : 'text-gray-700 dark:text-gray-300'
-                              }`}
-                            >
-                              {note.title}
-                            </p>
-                            <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                              {pendingNoteIds?.has(note.id) ? '작성중' : formatDateTime(note.updatedAt)}
-                            </p>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
+                    <ul>{category.notes.map((note) => renderNoteItem(note))}</ul>
                   )}
                 </div>
               );
@@ -621,11 +765,76 @@ const Sidebar = ({
               </div>
             )}
           </div>
+
+          {/* 휴지통 섹션 */}
+          {!effectiveCollapsed && (
+            <div className="mt-2 border-t border-gray-200 dark:border-gray-800">
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => setIsTrashOpen((prev) => !prev)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setIsTrashOpen((prev) => !prev);
+                  }
+                }}
+                className="w-full flex items-center justify-between px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <svg
+                    className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${
+                      isTrashOpen ? 'rotate-90' : ''
+                    }`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                  <svg
+                    className="w-4 h-4 text-gray-400 dark:text-gray-500"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    휴지통
+                  </span>
+                </div>
+                {trashNotes.length > 0 && (
+                  <span className="text-xs text-gray-400 dark:text-gray-500">
+                    {trashNotes.length}
+                  </span>
+                )}
+              </div>
+              {isTrashOpen && trashNotes.length > 0 && (
+                <ul>{trashNotes.map((note) => renderNoteItem(note, true))}</ul>
+              )}
+              {isTrashOpen && trashNotes.length === 0 && (
+                <p className="px-10 py-3 text-xs text-gray-400 dark:text-gray-500">
+                  비어 있음
+                </p>
+              )}
+            </div>
+          )}
         </div>
       )}
 
       {/* + New Category 버튼 */}
-      {!effectiveCollapsed && onAddCategory && !isAddingCategory && (
+      {!effectiveCollapsed && onAddCategory && !isAddingCategory && !isChatOpen && (
         <div className="shrink-0 border-t border-gray-200 dark:border-gray-800 p-3">
           <button
             onClick={() => setIsAddingCategory(true)}

@@ -1,11 +1,11 @@
-import type { Note } from '~/features/note/types';
+import type { Note, CategoryNoteItem } from '~/features/note/types';
 import apiClient from '~/lib/apiClient';
 
 interface CreateNoteRequest {
   userId: string;
   title: string;
   content: string;
-  categoryId: number;
+  categoryId?: number;
 }
 
 interface UpdateNoteRequest {
@@ -26,4 +26,13 @@ export const notesApi = {
     apiClient.put<Note>(`/notes/${id}`, data).then((r) => r.data),
 
   delete: (id: number) => apiClient.delete(`/notes/${id}`).then((r) => r.data),
+
+  getTrash: () =>
+    apiClient.get<CategoryNoteItem[]>('/notes/trash').then((r) => r.data),
+
+  restore: (id: number) =>
+    apiClient.patch<Note>(`/notes/${id}/restore`).then((r) => r.data),
+
+  permanentDelete: (id: number) =>
+    apiClient.delete(`/notes/${id}/permanent`).then((r) => r.data),
 };

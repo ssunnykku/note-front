@@ -4,6 +4,7 @@ export interface CategoryNoteItem {
   title: string;
   createdAt: string;
   updatedAt: string;
+  deletedAt?: string;
 }
 
 export interface Category {
@@ -19,6 +20,7 @@ export interface Note {
   content: string;
   createdAt: string;
   updatedAt: string;
+  deletedAt?: string;
 }
 
 export interface ChatRoom {

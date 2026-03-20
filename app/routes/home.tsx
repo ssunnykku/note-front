@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router';
 import Sidebar from '~/features/note/Sidebar';
 import NoteContent from '~/features/note/NoteContent';
+import TrashNoteContent from '~/features/note/TrashNoteContent';
 import AiChatPanel from '~/features/ai/AiChatPanel';
 import { categoriesApi } from '~/lib/api/categories';
 import { notesApi } from '~/lib/api/notes';
-import type { Note, Category, ChatRoom } from '~/features/note/types';
+import type { Note, Category, CategoryNoteItem, ChatRoom } from '~/features/note/types';
 
 interface LayoutContext {
   isMobile: boolean;
@@ -20,6 +21,7 @@ export function meta() {
 export default function Home() {
   const { isMobile, sidebarOpen, setSidebarOpen } = useOutletContext<LayoutContext>();
   const [categories, setCategories] = useState<Category[]>([]);
+  const [uncategorizedNotes, setUncategorizedNotes] = useState<CategoryNoteItem[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -27,6 +29,9 @@ export default function Home() {
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [mobileView, setMobileView] = useState<'list' | 'editor' | 'chat'>('list');
   const [pendingNoteIds, setPendingNoteIds] = useState<Set<number>>(new Set());
+  const [trashNotes, setTrashNotes] = useState<CategoryNoteItem[]>([]);
+  const [selectedTrashNoteId, setSelectedTrashNoteId] = useState<number | null>(null);
+  const [selectedTrashNote, setSelectedTrashNote] = useState<Note | null>(null);
 
   useEffect(() => {
     const userId = localStorage.getItem('userId') || '550e8400-e29b-41d4-a716-446655440000';
@@ -43,6 +48,8 @@ export default function Home() {
       .catch((err) => {
         console.error('카테고리 로딩 실패:', err);
       });
+
+    notesApi.getTrash().then(setTrashNotes).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -54,6 +61,15 @@ export default function Home() {
       .then(setSelectedNote)
       .catch(() => setSelectedNote(null));
   }, [selectedId, pendingNoteIds]);
+
+  // 휴지통 노트 선택 시 상세 조회
+  useEffect(() => {
+    if (selectedTrashNoteId === null) return;
+    notesApi
+      .getById(selectedTrashNoteId)
+      .then(setSelectedTrashNote)
+      .catch(() => setSelectedTrashNote(null));
+  }, [selectedTrashNoteId]);
 
   const selectedChat = chatRooms.find((c) => c.id === selectedChatId) ?? null;
 
@@ -69,7 +85,7 @@ export default function Home() {
           userId,
           title,
           content,
-          categoryId: categoryId!,
+          categoryId: categoryId,
         });
         // pending에서 제거
         setPendingNoteIds((prev) => {
@@ -77,41 +93,44 @@ export default function Home() {
           next.delete(noteId);
           return next;
         });
-        // 카테고리 내 임시 노트를 실제 노트로 교체
-        setCategories((prev) =>
-          prev.map((cat) => ({
-            ...cat,
-            notes: cat.notes.map((note) =>
-              note.id === noteId
-                ? {
-                    ...note,
-                    id: created.id,
-                    title: created.title,
-                    updatedAt: created.updatedAt,
-                  }
-                : note,
-            ),
-          })),
-        );
+
+        const updateNote = (note: CategoryNoteItem) =>
+          note.id === noteId
+            ? { ...note, id: created.id, title: created.title, updatedAt: created.updatedAt }
+            : note;
+
+        if (categoryId) {
+          // 카테고리 내 임시 노트를 실제 노트로 교체
+          setCategories((prev) =>
+            prev.map((cat) => ({
+              ...cat,
+              notes: cat.notes.map(updateNote),
+            })),
+          );
+        } else {
+          // 미분류 노트 교체
+          setUncategorizedNotes((prev) => prev.map(updateNote));
+        }
         setSelectedId(created.id);
         setSelectedNote((prev) =>
-          prev && prev.id === noteId
-            ? { ...created }
-            : prev,
+          prev && prev.id === noteId ? { ...created } : prev,
         );
       } else {
         // 기존 노트 → update API 호출
         const updated = await notesApi.update(noteId, { title, content, categoryId });
+
+        const updateNote = (note: CategoryNoteItem) =>
+          note.id === noteId
+            ? { ...note, title: updated.title, updatedAt: updated.updatedAt }
+            : note;
+
         setCategories((prev) =>
           prev.map((cat) => ({
             ...cat,
-            notes: cat.notes.map((note) =>
-              note.id === noteId
-                ? { ...note, title: updated.title, updatedAt: updated.updatedAt }
-                : note,
-            ),
+            notes: cat.notes.map(updateNote),
           })),
         );
+        setUncategorizedNotes((prev) => prev.map(updateNote));
         setSelectedNote((prev) =>
           prev && prev.id === noteId
             ? { ...prev, title: updated.title, updatedAt: updated.updatedAt }
@@ -141,6 +160,7 @@ export default function Home() {
       ),
     );
     setSelectedId(tempId);
+    setSelectedTrashNoteId(null);
     setSelectedNote({
       id: tempId,
       userId,
@@ -150,6 +170,128 @@ export default function Home() {
       updatedAt: now,
     });
     if (isMobile) setMobileView('editor');
+  };
+
+  const handleQuickMemo = () => {
+    const userId = localStorage.getItem('userId') || '550e8400-e29b-41d4-a716-446655440000';
+    const tempId = -Date.now();
+    const now = new Date().toISOString();
+    const noteItem: CategoryNoteItem = {
+      id: tempId,
+      userId,
+      title: '새 노트',
+      createdAt: now,
+      updatedAt: now,
+    };
+    setPendingNoteIds((prev) => new Set(prev).add(tempId));
+    setUncategorizedNotes((prev) => [noteItem, ...prev]);
+    setSelectedId(tempId);
+    setSelectedTrashNoteId(null);
+    setSelectedNote({
+      id: tempId,
+      userId,
+      title: '새 노트',
+      content: '',
+      createdAt: now,
+      updatedAt: now,
+    });
+    if (isMobile) setMobileView('editor');
+  };
+
+  const handleDeleteNote = async (noteId: number) => {
+    // pending 노트는 서버 호출 없이 제거
+    if (pendingNoteIds.has(noteId)) {
+      setPendingNoteIds((prev) => {
+        const next = new Set(prev);
+        next.delete(noteId);
+        return next;
+      });
+      setCategories((prev) =>
+        prev.map((cat) => ({ ...cat, notes: cat.notes.filter((n) => n.id !== noteId) })),
+      );
+      setUncategorizedNotes((prev) => prev.filter((n) => n.id !== noteId));
+      if (selectedId === noteId) {
+        setSelectedId(null);
+        setSelectedNote(null);
+      }
+      return;
+    }
+
+    try {
+      await notesApi.delete(noteId);
+
+      // 삭제된 노트를 목록에서 찾아서 휴지통으로 이동
+      let deletedNote: CategoryNoteItem | undefined;
+      setCategories((prev) =>
+        prev.map((cat) => {
+          const found = cat.notes.find((n) => n.id === noteId);
+          if (found) deletedNote = found;
+          return { ...cat, notes: cat.notes.filter((n) => n.id !== noteId) };
+        }),
+      );
+      setUncategorizedNotes((prev) => {
+        const found = prev.find((n) => n.id === noteId);
+        if (found) deletedNote = found;
+        return prev.filter((n) => n.id !== noteId);
+      });
+
+      if (deletedNote) {
+        setTrashNotes((prev) => [{ ...deletedNote!, deletedAt: new Date().toISOString() }, ...prev]);
+      }
+
+      if (selectedId === noteId) {
+        setSelectedId(null);
+        setSelectedNote(null);
+      }
+    } catch (err) {
+      console.error('노트 삭제 실패:', err);
+    }
+  };
+
+  const handleRestoreNote = async (noteId: number) => {
+    try {
+      const restored = await notesApi.restore(noteId);
+      setTrashNotes((prev) => prev.filter((n) => n.id !== noteId));
+      setSelectedTrashNoteId(null);
+      setSelectedTrashNote(null);
+
+      // 복원된 노트를 미분류에 추가 (원래 카테고리 정보가 없으므로)
+      setUncategorizedNotes((prev) => [
+        {
+          id: restored.id,
+          userId: restored.userId,
+          title: restored.title,
+          createdAt: restored.createdAt,
+          updatedAt: restored.updatedAt,
+        },
+        ...prev,
+      ]);
+    } catch (err) {
+      console.error('노트 복원 실패:', err);
+    }
+  };
+
+  const handlePermanentDelete = async (noteId: number) => {
+    try {
+      await notesApi.permanentDelete(noteId);
+      setTrashNotes((prev) => prev.filter((n) => n.id !== noteId));
+      if (selectedTrashNoteId === noteId) {
+        setSelectedTrashNoteId(null);
+        setSelectedTrashNote(null);
+      }
+    } catch (err) {
+      console.error('영구 삭제 실패:', err);
+    }
+  };
+
+  const handleSelectTrashNote = (noteId: number) => {
+    setSelectedTrashNoteId(noteId);
+    setSelectedId(null);
+    setSelectedNote(null);
+    if (isMobile) {
+      setMobileView('editor');
+      setSidebarOpen(false);
+    }
   };
 
   const handleAddCategory = async (name: string) => {
@@ -207,8 +349,10 @@ export default function Home() {
           notes: cat.notes.filter((n) => n.id !== pendingId),
         })),
       );
+      setUncategorizedNotes((prev) => prev.filter((n) => n.id !== pendingId));
     }
     setSelectedId(id);
+    setSelectedTrashNoteId(null);
     setIsChatOpen(false);
     setSelectedChatId(null);
     if (isMobile) {
@@ -229,97 +373,30 @@ export default function Home() {
     setMobileView('list');
   };
 
-  // 모바일 사이드바 오버레이 (에디터/채팅 뷰에서 햄버거로 열 때)
-  const mobileSidebarOverlay = isMobile && sidebarOpen && mobileView !== 'list' && (
-    <>
-      <div
-        className="fixed inset-0 z-40 bg-black/50"
-        onClick={() => setSidebarOpen(false)}
-      />
-      <aside className="fixed inset-y-0 left-0 z-50 w-72 bg-gray-50 dark:bg-gray-900 shadow-xl pt-14">
-        <Sidebar
-          categories={categories}
-          selectedId={selectedId}
-          onSelect={handleSelectNote}
-          onAddNote={handleAddNote}
-          isChatOpen={isChatOpen}
-          onToggleChat={handleToggleChat}
-          chatRooms={chatRooms}
-          selectedChatId={selectedChatId}
-          onSelectChat={handleSelectChat}
-          onAddChat={handleAddChat}
-          onRenameChat={handleRenameChat}
-          onAddCategory={handleAddCategory}
-          pendingNoteIds={pendingNoteIds}
-          forceMobile
+  // 현재 보여줄 메인 컨텐츠 결정
+  const renderMainContent = (onBack?: () => void) => {
+    if (selectedTrashNoteId !== null) {
+      return (
+        <TrashNoteContent
+          note={selectedTrashNote}
+          onRestore={handleRestoreNote}
+          onPermanentDelete={handlePermanentDelete}
+          onBack={onBack}
         />
-      </aside>
-    </>
-  );
-
-  // 모바일 레이아웃
-  if (isMobile) {
-    return (
-      <>
-        {mobileSidebarOverlay}
-        {mobileView === 'list' ? (
-          <Sidebar
-            categories={categories}
-            selectedId={selectedId}
-            onSelect={handleSelectNote}
-            onAddNote={handleAddNote}
-            isChatOpen={isChatOpen}
-            onToggleChat={handleToggleChat}
-            chatRooms={chatRooms}
-            selectedChatId={selectedChatId}
-            onSelectChat={handleSelectChat}
-            onAddChat={handleAddChat}
-            onRenameChat={handleRenameChat}
-          onAddCategory={handleAddCategory}
-          pendingNoteIds={pendingNoteIds}
-            forceMobile
-          />
-        ) : mobileView === 'editor' ? (
-          <NoteContent note={selectedNote} onSave={handleSaveNote} onBack={handleMobileBack} isPending={selectedNote ? pendingNoteIds.has(selectedNote.id) : false} />
-        ) : isChatOpen && selectedChat ? (
-          <AiChatPanel
-            chatId={selectedChat.id}
-            chatTitle={selectedChat.title}
-            onClose={() => setSelectedChatId(null)}
-            onBack={handleMobileBack}
-          />
-        ) : (
-          <NoteContent note={selectedNote} onSave={handleSaveNote} onBack={handleMobileBack} isPending={selectedNote ? pendingNoteIds.has(selectedNote.id) : false} />
-        )}
-      </>
-    );
-  }
-
-  // 데스크톱/태블릿 레이아웃
-  return (
-    <>
-      <Sidebar
-        categories={categories}
-        selectedId={selectedId}
-        onSelect={handleSelectNote}
-        onAddNote={handleAddNote}
-        onAddCategory={handleAddCategory}
-        pendingNoteIds={pendingNoteIds}
-        isChatOpen={isChatOpen}
-        onToggleChat={handleToggleChat}
-        chatRooms={chatRooms}
-        selectedChatId={selectedChatId}
-        onSelectChat={handleSelectChat}
-        onAddChat={handleAddChat}
-        onRenameChat={handleRenameChat}
-      />
-      {isChatOpen && selectedChat ? (
+      );
+    }
+    if (isChatOpen && selectedChat) {
+      return (
         <AiChatPanel
           chatId={selectedChat.id}
           chatTitle={selectedChat.title}
           onClose={() => setSelectedChatId(null)}
+          onBack={onBack}
         />
-      ) : isChatOpen ? (
+      );
+    }
+    if (isChatOpen) {
+      return (
         <div className="flex-1 flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 gap-3">
           <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path
@@ -331,9 +408,82 @@ export default function Home() {
           </svg>
           <p className="text-sm">왼쪽 목록에서 채팅을 선택하거나 추가해주세요</p>
         </div>
-      ) : (
-        <NoteContent note={selectedNote} onSave={handleSaveNote} isPending={selectedNote ? pendingNoteIds.has(selectedNote.id) : false} />
-      )}
+      );
+    }
+    return (
+      <NoteContent
+        note={selectedNote}
+        onSave={handleSaveNote}
+        onDelete={handleDeleteNote}
+        onBack={onBack}
+        isPending={selectedNote ? pendingNoteIds.has(selectedNote.id) : false}
+      />
+    );
+  };
+
+  const sidebarProps = {
+    categories,
+    selectedId,
+    onSelect: handleSelectNote,
+    onAddNote: handleAddNote,
+    onAddCategory: handleAddCategory,
+    onDeleteNote: handleDeleteNote,
+    onQuickMemo: handleQuickMemo,
+    uncategorizedNotes,
+    trashNotes,
+    onSelectTrashNote: handleSelectTrashNote,
+    selectedTrashNoteId,
+    pendingNoteIds,
+    isChatOpen,
+    onToggleChat: handleToggleChat,
+    chatRooms,
+    selectedChatId,
+    onSelectChat: handleSelectChat,
+    onAddChat: handleAddChat,
+    onRenameChat: handleRenameChat,
+  };
+
+  // 모바일 사이드바 오버레이 (에디터/채팅 뷰에서 햄버거로 열 때)
+  const mobileSidebarOverlay = isMobile && sidebarOpen && mobileView !== 'list' && (
+    <>
+      <div
+        className="fixed inset-0 z-40 bg-black/50"
+        onClick={() => setSidebarOpen(false)}
+      />
+      <aside className="fixed inset-y-0 left-0 z-50 w-72 bg-gray-50 dark:bg-gray-900 shadow-xl pt-14">
+        <Sidebar {...sidebarProps} forceMobile />
+      </aside>
+    </>
+  );
+
+  // 모바일 레이아웃
+  if (isMobile) {
+    return (
+      <>
+        {mobileSidebarOverlay}
+        {mobileView === 'list' ? (
+          <Sidebar {...sidebarProps} forceMobile />
+        ) : mobileView === 'editor' ? (
+          renderMainContent(handleMobileBack)
+        ) : isChatOpen && selectedChat ? (
+          <AiChatPanel
+            chatId={selectedChat.id}
+            chatTitle={selectedChat.title}
+            onClose={() => setSelectedChatId(null)}
+            onBack={handleMobileBack}
+          />
+        ) : (
+          renderMainContent(handleMobileBack)
+        )}
+      </>
+    );
+  }
+
+  // 데스크톱/태블릿 레이아웃
+  return (
+    <>
+      <Sidebar {...sidebarProps} />
+      {renderMainContent()}
     </>
   );
 }
