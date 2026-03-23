@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import type { Category, CategoryNoteItem, ChatRoom } from './types';
 import Palette from '~/lib/palette';
 import { formatDateTime } from '~/lib/formatDate';
+import ConfirmModal from '~/components/ui/ConfirmModal';
 
 const MAX_CHATS_PER_CATEGORY = 5;
 
@@ -12,6 +13,9 @@ interface SidebarProps {
   onAddNote?: (categoryId: number) => void;
   onAddCategory?: (name: string) => void;
   onDeleteNote?: (noteId: number) => void;
+  onDeleteCategory?: (categoryId: number) => void;
+  onRenameCategory?: (categoryId: number, name: string) => void;
+  onMoveNoteToCategory?: (noteId: number, categoryId: number) => void;
   onQuickMemo?: () => void;
   uncategorizedNotes?: CategoryNoteItem[];
   trashNoteCount?: number;
@@ -39,6 +43,9 @@ const Sidebar = ({
   onAddNote,
   onAddCategory,
   onDeleteNote,
+  onDeleteCategory,
+  onRenameCategory,
+  onMoveNoteToCategory,
   onQuickMemo,
   uncategorizedNotes = [],
   trashNoteCount = 0,
@@ -62,6 +69,13 @@ const Sidebar = ({
   const [newCategoryName, setNewCategoryName] = useState('');
   const newCategoryInputRef = useRef<HTMLInputElement>(null);
   const [isUncategorizedOpen, setIsUncategorizedOpen] = useState(true);
+  const [openMenuCategoryId, setOpenMenuCategoryId] = useState<number | null>(null);
+  const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [dragOverCategoryId, setDragOverCategoryId] = useState<number | null>(null);
+  const [editingCategoryId, setEditingCategoryId] = useState<number | null>(null);
+  const [editingCategoryName, setEditingCategoryName] = useState('');
+  const editCategoryInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (editingChatId) {
@@ -75,6 +89,42 @@ const Sidebar = ({
       newCategoryInputRef.current?.focus();
     }
   }, [isAddingCategory]);
+
+  useEffect(() => {
+    if (editingCategoryId) {
+      editCategoryInputRef.current?.focus();
+      editCategoryInputRef.current?.select();
+    }
+  }, [editingCategoryId]);
+
+  const startCategoryRename = (categoryId: number, currentName: string) => {
+    setEditingCategoryId(categoryId);
+    setEditingCategoryName(currentName);
+  };
+
+  const commitCategoryRename = () => {
+    if (editingCategoryId && editingCategoryName.trim() && onRenameCategory) {
+      onRenameCategory(editingCategoryId, editingCategoryName.trim());
+    }
+    setEditingCategoryId(null);
+    setEditingCategoryName('');
+  };
+
+  const cancelCategoryRename = () => {
+    setEditingCategoryId(null);
+    setEditingCategoryName('');
+  };
+
+  useEffect(() => {
+    if (openMenuCategoryId === null) return;
+    const handleClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpenMenuCategoryId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [openMenuCategoryId]);
 
   const commitNewCategory = () => {
     if (newCategoryName.trim() && onAddCategory) {
@@ -176,7 +226,14 @@ const Sidebar = ({
     const isSelected = selectedId === note.id;
 
     return (
-      <li key={note.id}>
+      <li
+        key={note.id}
+        draggable={!!onMoveNoteToCategory}
+        onDragStart={(e) => {
+          e.dataTransfer.setData('text/plain', String(note.id));
+          e.dataTransfer.effectAllowed = 'move';
+        }}
+      >
         <div className="group/note relative">
           <button
             onClick={() => onSelect(note.id)}
@@ -655,10 +712,26 @@ const Sidebar = ({
                             toggleCategory(category.id);
                           }
                         }}
-                        className={`w-full flex items-center justify-between px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors cursor-pointer ${
-                          !isOpen && getSelectedNoteCategory() === category.id
-                            ? 'bg-gray-100 dark:bg-gray-800/50'
-                            : ''
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.dataTransfer.dropEffect = 'move';
+                          setDragOverCategoryId(category.id);
+                        }}
+                        onDragLeave={() => setDragOverCategoryId(null)}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          setDragOverCategoryId(null);
+                          const noteId = Number(e.dataTransfer.getData('text/plain'));
+                          if (noteId && onMoveNoteToCategory) {
+                            onMoveNoteToCategory(noteId, category.id);
+                          }
+                        }}
+                        className={`w-full flex items-center justify-between px-4 py-2 transition-colors cursor-pointer ${
+                          dragOverCategoryId === category.id
+                            ? 'bg-blue-50 dark:bg-blue-900/30 ring-1 ring-blue-400 ring-inset'
+                            : !isOpen && getSelectedNoteCategory() === category.id
+                              ? 'bg-gray-100 dark:bg-gray-800/50'
+                              : 'hover:bg-gray-100 dark:hover:bg-gray-800/50'
                         }`}
                       >
                         <div className="flex items-center gap-2">
@@ -678,38 +751,96 @@ const Sidebar = ({
                             />
                           </svg>
                           <div
-                            className="w-2 h-2 rounded-full"
+                            className="w-2 h-2 rounded-full shrink-0"
                             style={{ backgroundColor: color }}
                           />
-                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            {category.categoryName}
-                          </span>
+                          {editingCategoryId === category.id ? (
+                            <input
+                              ref={editCategoryInputRef}
+                              type="text"
+                              value={editingCategoryName}
+                              onChange={(e) => setEditingCategoryName(e.target.value)}
+                              onBlur={commitCategoryRename}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') commitCategoryRename();
+                                if (e.key === 'Escape') cancelCategoryRename();
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              className="flex-1 min-w-0 text-sm font-medium bg-transparent border-b border-accent outline-none text-gray-900 dark:text-white"
+                            />
+                          ) : (
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
+                              {category.categoryName}
+                            </span>
+                          )}
                         </div>
                         <div className="flex items-center gap-2">
-                          {onAddNote && (
+                          <div className="relative" ref={openMenuCategoryId === category.id ? menuRef : undefined}>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleAddNote(category.id);
+                                setOpenMenuCategoryId(
+                                  openMenuCategoryId === category.id ? null : category.id,
+                                );
                               }}
-                              className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-all"
-                              aria-label="노트 추가"
+                              className={`p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-all ${
+                                openMenuCategoryId === category.id
+                                  ? 'opacity-100'
+                                  : 'opacity-0 group-hover:opacity-100'
+                              }`}
+                              aria-label="카테고리 메뉴"
                             >
                               <svg
                                 className="w-4 h-4 text-gray-600 dark:text-gray-400"
-                                fill="none"
+                                fill="currentColor"
                                 viewBox="0 0 24 24"
-                                stroke="currentColor"
                               >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M12 4v16m8-8H4"
-                                />
+                                <circle cx="12" cy="6" r="1.5" />
+                                <circle cx="12" cy="12" r="1.5" />
+                                <circle cx="12" cy="18" r="1.5" />
                               </svg>
                             </button>
-                          )}
+                            {openMenuCategoryId === category.id && (
+                              <div className="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50">
+                                {onAddNote && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleAddNote(category.id);
+                                      setOpenMenuCategoryId(null);
+                                    }}
+                                    className="w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                  >
+                                    노트 추가
+                                  </button>
+                                )}
+                                {onRenameCategory && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      startCategoryRename(category.id, category.categoryName);
+                                      setOpenMenuCategoryId(null);
+                                    }}
+                                    className="w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                  >
+                                    이름 변경
+                                  </button>
+                                )}
+                                {onDeleteCategory && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setDeletingCategory(category);
+                                      setOpenMenuCategoryId(null);
+                                    }}
+                                    className="w-full text-left px-3 py-1.5 text-sm text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                  >
+                                    삭제
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </div>
                           <span className="text-xs text-gray-400 dark:text-gray-500">
                             {category.notes.length}
                           </span>
@@ -826,6 +957,24 @@ const Sidebar = ({
           </button>
         </div>
       )}
+      <ConfirmModal
+        isOpen={deletingCategory !== null}
+        title={`"${deletingCategory?.categoryName}"을(를) 삭제하시겠습니까?`}
+        description={
+          deletingCategory && deletingCategory.notes.length > 0
+            ? `포함된 노트 ${deletingCategory.notes.length}개는 미분류로 이동됩니다.`
+            : undefined
+        }
+        confirmLabel="삭제"
+        variant="danger"
+        onConfirm={() => {
+          if (deletingCategory && onDeleteCategory) {
+            onDeleteCategory(deletingCategory.id);
+          }
+          setDeletingCategory(null);
+        }}
+        onCancel={() => setDeletingCategory(null)}
+      />
     </aside>
   );
 };

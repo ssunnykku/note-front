@@ -7,6 +7,7 @@ import TrashListView from '~/features/note/TrashListView';
 import AiChatPanel from '~/features/ai/AiChatPanel';
 import { categoriesApi } from '~/lib/api/categories';
 import { notesApi } from '~/lib/api/notes';
+import Palette from '~/lib/palette';
 import type { Note, Category, CategoryNoteItem, ChatRoom } from '~/features/note/types';
 
 // 더미 휴지통 데이터
@@ -372,6 +373,91 @@ export default function Home() {
     }
   };
 
+  const handleRenameCategory = async (categoryId: number, name: string) => {
+    try {
+      await categoriesApi.update(String(categoryId), { name });
+      setCategories((prev) =>
+        prev.map((cat) => (cat.id === categoryId ? { ...cat, categoryName: name } : cat)),
+      );
+    } catch (err) {
+      console.error('카테고리 이름 변경 실패:', err);
+    }
+  };
+
+  const handleDeleteCategory = async (categoryId: number) => {
+    const category = categories.find((cat) => cat.id === categoryId);
+    if (!category) return;
+
+    try {
+      await categoriesApi.delete(String(categoryId));
+
+      // 카테고리 내 노트들을 미분류로 이동
+      if (category.notes.length > 0) {
+        setUncategorizedNotes((prev) => [...category.notes, ...prev]);
+      }
+
+      setCategories((prev) => prev.filter((cat) => cat.id !== categoryId));
+    } catch (err) {
+      console.error('카테고리 삭제 실패:', err);
+    }
+  };
+
+  const handleMoveNoteToCategory = async (noteId: number, categoryId: number) => {
+    // 이미 해당 카테고리에 있는 노트인지 확인
+    const targetCategory = categories.find((cat) => cat.id === categoryId);
+    if (targetCategory?.notes.some((n) => n.id === noteId)) return;
+
+    // pending 노트는 로컬에서만 이동
+    if (pendingNoteIds.has(noteId)) {
+      const fromUncategorized = uncategorizedNotes.find((n) => n.id === noteId);
+      const fromCategory = categories.flatMap((cat) => cat.notes).find((n) => n.id === noteId);
+      const movedNote = fromUncategorized || fromCategory;
+      if (!movedNote) return;
+
+      if (fromUncategorized) {
+        setUncategorizedNotes((prev) => prev.filter((n) => n.id !== noteId));
+      }
+      setCategories((prev) =>
+        prev.map((cat) => {
+          const filtered = cat.notes.filter((n) => n.id !== noteId);
+          if (cat.id === categoryId) {
+            return { ...cat, notes: [movedNote, ...filtered] };
+          }
+          return { ...cat, notes: filtered };
+        }),
+      );
+      return;
+    }
+
+    try {
+      await notesApi.update(noteId, { categoryId });
+
+      let movedNote: CategoryNoteItem | undefined;
+
+      // 미분류에서 찾기
+      setUncategorizedNotes((prev) => {
+        const found = prev.find((n) => n.id === noteId);
+        if (found) movedNote = found;
+        return prev.filter((n) => n.id !== noteId);
+      });
+
+      // 다른 카테고리에서 찾기 & 제거 + 대상 카테고리에 추가
+      setCategories((prev) =>
+        prev.map((cat) => {
+          const found = cat.notes.find((n) => n.id === noteId);
+          if (found) movedNote = found;
+          const filtered = cat.notes.filter((n) => n.id !== noteId);
+          if (cat.id === categoryId && movedNote) {
+            return { ...cat, notes: [movedNote, ...filtered] };
+          }
+          return { ...cat, notes: filtered };
+        }),
+      );
+    } catch (err) {
+      console.error('노트 이동 실패:', err);
+    }
+  };
+
   const handleToggleChat = () => {
     if (isChatOpen) {
       setIsChatOpen(false);
@@ -496,6 +582,15 @@ export default function Home() {
         </div>
       );
     }
+    const noteCategory = selectedNote
+      ? categories.find((cat) => cat.notes.some((n) => n.id === selectedNote.id))
+      : null;
+    const noteCategoryIndex = noteCategory ? categories.indexOf(noteCategory) : -1;
+    const noteCategoryColor =
+      noteCategoryIndex >= 0
+        ? Palette.CategoryColors[noteCategoryIndex % Palette.CategoryColors.length]
+        : null;
+
     return (
       <NoteContent
         note={selectedNote}
@@ -503,6 +598,8 @@ export default function Home() {
         onDelete={handleDeleteNote}
         onBack={onBack}
         isPending={selectedNote ? pendingNoteIds.has(selectedNote.id) : false}
+        categoryName={noteCategory?.categoryName}
+        categoryColor={noteCategoryColor}
       />
     );
   };
@@ -513,6 +610,9 @@ export default function Home() {
     onSelect: handleSelectNote,
     onAddNote: handleAddNote,
     onAddCategory: handleAddCategory,
+    onDeleteCategory: handleDeleteCategory,
+    onRenameCategory: handleRenameCategory,
+    onMoveNoteToCategory: handleMoveNoteToCategory,
     onDeleteNote: handleDeleteNote,
     onQuickMemo: handleQuickMemo,
     uncategorizedNotes,

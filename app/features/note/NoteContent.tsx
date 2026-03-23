@@ -9,9 +9,19 @@ interface NoteContentProps {
   onDelete?: (noteId: number) => void;
   onBack?: () => void;
   isPending?: boolean;
+  categoryName?: string | null;
+  categoryColor?: string | null;
 }
 
-const NoteContent = ({ note, onSave, onDelete, onBack, isPending }: NoteContentProps) => {
+const NoteContent = ({
+  note,
+  onSave,
+  onDelete,
+  onBack,
+  isPending,
+  categoryName,
+  categoryColor,
+}: NoteContentProps) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -124,35 +134,37 @@ const NoteContent = ({ note, onSave, onDelete, onBack, isPending }: NoteContentP
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* 헤더 */}
       <div className="border-b border-gray-200 dark:border-gray-800 px-4 py-3 lg:px-6 bg-white dark:bg-gray-950">
-        <div className="flex items-center justify-between gap-4">
-          {onBack && (
-            <button
-              onClick={onBack}
-              className="shrink-0 w-8 h-8 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
-              aria-label="목록으로 돌아가기"
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="shrink-0 w-8 h-8 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors mb-1"
+            aria-label="목록으로 돌아가기"
+          >
+            <svg
+              className="w-5 h-5 text-gray-600 dark:text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
             >
-              <svg
-                className="w-5 h-5 text-gray-600 dark:text-gray-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-            </button>
-          )}
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="flex-1 text-2xl font-bold bg-transparent border-none outline-none text-gray-900 dark:text-white placeholder:text-gray-400"
-            placeholder="제목 없음"
-          />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+          </button>
+        )}
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-1.5">
+            <div
+              className="w-2 h-2 rounded-full shrink-0"
+              style={{ backgroundColor: categoryColor || '#9ca3af' }}
+            />
+            <span className="text-xs text-gray-400 dark:text-gray-500">
+              {categoryName || '미분류'}
+            </span>
+          </div>
           <div className="flex items-center gap-2 shrink-0">
             {onDelete && note && (
               <button
@@ -177,6 +189,13 @@ const NoteContent = ({ note, onSave, onDelete, onBack, isPending }: NoteContentP
             )}
           </div>
         </div>
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="flex-1 text-2xl font-bold bg-transparent border-none outline-none text-gray-900 dark:text-white placeholder:text-gray-400"
+          placeholder="제목 없음"
+        />
         {isPending && !hasEdited ? (
           <div className="mt-2 text-xs text-gray-400 dark:text-gray-500">작성중</div>
         ) : (
