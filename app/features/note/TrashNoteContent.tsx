@@ -1,4 +1,5 @@
 import type { Note } from './types';
+import Button from '~/components/ui/Button';
 
 interface TrashNoteContentProps {
   note: Note | null;
@@ -52,20 +53,14 @@ const TrashNoteContent = ({
           </h1>
           <div className="flex items-center gap-2 shrink-0">
             {onRestore && (
-              <button
-                onClick={() => onRestore(note.id)}
-                className="px-3 py-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-              >
+              <Button variant="default" size="sm" onClick={() => onRestore(note.id)}>
                 복원
-              </button>
+              </Button>
             )}
             {onPermanentDelete && (
-              <button
-                onClick={() => onPermanentDelete(note.id)}
-                className="px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-              >
+              <Button variant="danger" size="sm" onClick={() => onPermanentDelete(note.id)}>
                 영구 삭제
-              </button>
+              </Button>
             )}
           </div>
         </div>

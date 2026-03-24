@@ -26,9 +26,9 @@ export default function Signup() {
       <div className="w-full max-w-sm">
         {/* 로고 */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Note</h1>
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-            계정을 만들고 노트를 시작하세요
+          <h1 className="text-3xl font-extrabold text-primary">Note</h1>
+          <p className="mt-2 text-sm text-gray-400 dark:text-gray-500">
+            새 계정을 만들어보세요
           </p>
         </div>
 
@@ -48,7 +48,7 @@ export default function Signup() {
               onChange={(e) => setNickname(e.target.value)}
               placeholder="닉네임을 입력하세요"
               required
-              className="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
+              className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
             />
           </div>
 
@@ -66,7 +66,7 @@ export default function Signup() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="name@example.com"
               required
-              className="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
+              className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
             />
           </div>
 
@@ -85,7 +85,7 @@ export default function Signup() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="비밀번호를 입력하세요"
                 required
-                className="w-full px-3 py-2.5 pr-10 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
+                className="w-full px-3.5 py-2.5 pr-10 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
               />
               <button
                 type="button"
@@ -136,7 +136,7 @@ export default function Signup() {
                 onChange={(e) => setPasswordConfirm(e.target.value)}
                 placeholder="비밀번호를 다시 입력하세요"
                 required
-                className={`w-full px-3 py-2.5 pr-10 rounded-lg border bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm outline-none transition-colors ${
+                className={`w-full px-3.5 py-2.5 pr-10 rounded-lg border bg-gray-50 dark:bg-gray-900 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none transition-colors ${
                   passwordMismatch
                     ? 'border-red-400 dark:border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500'
                     : 'border-gray-300 dark:border-gray-700 focus:border-primary focus:ring-1 focus:ring-primary'
@@ -182,7 +182,7 @@ export default function Signup() {
           <button
             type="submit"
             disabled={passwordMismatch}
-            className="w-full py-2.5 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary-hover transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-2.5 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary-hover transition-colors cursor-pointer mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             회원가입
           </button>

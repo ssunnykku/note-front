@@ -7,11 +7,11 @@
     'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic',
     'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
 
-  /* Primary */
-  --color-primary: #5C7CFA;
-  --color-primary-hover: #4C6EF5;
-  --color-primary-light: #DBE4FF;
-  --color-primary-dark: #4263EB;
+  /* Primary (Indigo) */
+  --color-primary: #6366f1;
+  --color-primary-hover: #4f46e5;
+  --color-primary-light: #e0e7ff;
+  --color-primary-dark: #4338ca;
 
   /* Accent (AI/Chat) */
   --color-accent: #7C5CFA;

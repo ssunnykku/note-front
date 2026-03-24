@@ -1,5 +1,6 @@
 import type { CategoryNoteItem } from './types';
 import { formatDateTime } from '~/lib/formatDate';
+import Button from '~/components/ui/Button';
 
 interface TrashListViewProps {
   trashNotes: CategoryNoteItem[];
@@ -97,32 +98,32 @@ const TrashListView = ({
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
                   {note.title}
                 </h3>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
-                  {note.contentPreview || '내용 없음'}
-                </p>
-                <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
-                  삭제: {note.deletedAt ? formatDateTime(note.deletedAt) : '-'}
+                <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                  삭제일: {note.deletedAt ? formatDateTime(note.deletedAt) : '-'}
+                  {note.contentPreview && ` · ${note.contentPreview}`}
                 </p>
               </div>
-              <div className="flex items-center gap-1 shrink-0">
-                <button
+              <div className="flex items-center gap-2 shrink-0">
+                <Button
+                  variant="default"
+                  size="sm"
                   onClick={(e) => {
                     e.stopPropagation();
                     onRestore(note.id);
                   }}
-                  className="px-2 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
                 >
                   복원
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
                   onClick={(e) => {
                     e.stopPropagation();
                     onPermanentDelete(note.id);
                   }}
-                  className="px-2 py-1 text-xs font-medium text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                 >
-                  삭제
-                </button>
+                  영구 삭제
+                </Button>
               </div>
             </div>
           </div>

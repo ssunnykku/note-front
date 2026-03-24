@@ -31,8 +31,8 @@ export default function Login() {
       <div className="w-full max-w-sm">
         {/* 로고 */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Note</h1>
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+          <h1 className="text-3xl font-extrabold text-primary">Note</h1>
+          <p className="mt-2 text-sm text-gray-400 dark:text-gray-500">
             로그인하여 노트를 관리하세요
           </p>
         </div>
@@ -53,7 +53,7 @@ export default function Login() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="name@example.com"
               required
-              className="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
+              className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
             />
           </div>
 
@@ -72,7 +72,7 @@ export default function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="비밀번호를 입력하세요"
                 required
-                className="w-full px-3 py-2.5 pr-10 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
+                className="w-full px-3.5 py-2.5 pr-10 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
               />
               <button
                 type="button"
@@ -114,7 +114,7 @@ export default function Login() {
 
           <button
             type="submit"
-            className="w-full py-2.5 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary-hover transition-colors cursor-pointer"
+            className="w-full py-2.5 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary-hover transition-colors cursor-pointer mt-2"
           >
             로그인
           </button>
