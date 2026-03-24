@@ -1,10 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import type { Category, CategoryNoteItem, ChatRoom } from './types';
 import Palette from '~/lib/palette';
 import { formatDateTime } from '~/lib/formatDate';
 import ConfirmModal from '~/components/ui/ConfirmModal';
-
-const MAX_CHATS_PER_CATEGORY = 5;
 
 interface SidebarProps {
   categories: Category[];
@@ -27,7 +25,7 @@ interface SidebarProps {
   chatRooms: ChatRoom[];
   selectedChatId: string | null;
   onSelectChat: (chatId: string) => void;
-  onAddChat: (categoryId: number) => void;
+  onAddChat: () => void;
   onRenameChat: (chatId: string, title: string) => void;
   forceMobile?: boolean;
 }
@@ -156,10 +154,8 @@ const Sidebar = ({
     setEditingChatId(null);
     setEditingTitle('');
   };
+
   const [openCategories, setOpenCategories] = useState<Set<number>>(
-    new Set(categories.map((cat) => cat.id)),
-  );
-  const [openChatCategories, setOpenChatCategories] = useState<Set<number>>(
     new Set(categories.map((cat) => cat.id)),
   );
 
@@ -169,15 +165,6 @@ const Sidebar = ({
       if (!openCategories.has(categoryId)) {
         setOpenCategories((prev) => new Set(prev).add(categoryId));
       }
-    }
-  };
-
-  const handleAddChat = (categoryId: number) => {
-    const categoryChats = chatRooms.filter((c) => c.categoryId === categoryId);
-    if (categoryChats.length >= MAX_CHATS_PER_CATEGORY) return;
-    onAddChat(categoryId);
-    if (!openChatCategories.has(categoryId)) {
-      setOpenChatCategories((prev) => new Set(prev).add(categoryId));
     }
   };
 
@@ -199,21 +186,11 @@ const Sidebar = ({
     });
   };
 
-  const toggleChatCategory = (categoryId: number) => {
-    setOpenChatCategories((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(categoryId)) {
-        newSet.delete(categoryId);
-      } else {
-        newSet.add(categoryId);
-      }
-      return newSet;
-    });
-  };
-
-  const getChatsByCategory = (categoryId: number) => {
-    return chatRooms.filter((chat) => chat.categoryId === categoryId);
-  };
+  // 채팅 목록 최신순 정렬
+  const sortedChatRooms = useMemo(
+    () => [...chatRooms].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    [chatRooms],
+  );
 
   const isMobile = !!forceMobile;
   const effectiveCollapsed = isMobile ? false : isCollapsed;
@@ -425,160 +402,128 @@ const Sidebar = ({
       </div>
 
       {isChatOpen ? (
-        /* ======= 채팅 모드 ======= */
-        <div className="flex-1 overflow-y-auto">
+        /* ======= 채팅 모드 - 플랫 리스트 ======= */
+        <div className="flex-1 overflow-y-auto flex flex-col">
+          {/* 새 채팅 버튼 */}
+          {!effectiveCollapsed && (
+            <div className="px-3 pb-2">
+              <button
+                onClick={onAddChat}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 border border-dashed border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 hover:border-gray-400 dark:hover:border-gray-600 rounded-lg transition-colors"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                새 채팅
+              </button>
+            </div>
+          )}
+
           {!effectiveCollapsed && (
             <div className="flex items-center justify-between px-4 py-2">
               <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                채팅 목록
+                AI 채팅
               </span>
               <span className="text-xs text-gray-400 dark:text-gray-500">{chatRooms.length}</span>
             </div>
           )}
-          <div>
-            {categories.map((category, categoryIndex) => {
-              const categoryChats = getChatsByCategory(category.id);
-              const isOpen = openChatCategories.has(category.id);
-              const canAdd = categoryChats.length < MAX_CHATS_PER_CATEGORY;
-              const color = getCategoryColor(categoryIndex);
 
-              return (
-                <div key={category.id}>
-                  {effectiveCollapsed ? (
-                    <button
-                      onClick={() => setIsCollapsed(false)}
-                      className="w-full flex items-center justify-center px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
-                      title={category.categoryName}
+          {/* 채팅 플랫 리스트 */}
+          <div className="flex-1 overflow-y-auto">
+            {effectiveCollapsed ? (
+              /* 접힌 상태: 아이콘만 표시 */
+              sortedChatRooms.map((chat) => (
+                <button
+                  key={chat.id}
+                  onClick={() => {
+                    setIsCollapsed(false);
+                    onSelectChat(chat.id);
+                  }}
+                  className={`w-full flex items-center justify-center px-4 py-3 transition-colors ${
+                    selectedChatId === chat.id
+                      ? 'bg-white dark:bg-gray-800'
+                      : 'hover:bg-gray-100 dark:hover:bg-gray-800/50'
+                  }`}
+                  title={chat.title}
+                >
+                  <svg
+                    className="w-4 h-4 text-accent"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"
+                    />
+                  </svg>
+                </button>
+              ))
+            ) : (
+              /* 펼친 상태: 전체 목록 */
+              <ul>
+                {sortedChatRooms.map((chat) => (
+                  <li key={chat.id}>
+                    <div
+                      onClick={() => onSelectChat(chat.id)}
+                      onDoubleClick={() => startRename(chat.id, chat.title)}
+                      className={`w-full text-left px-4 py-3 border-b border-gray-100 dark:border-gray-800 transition-colors cursor-pointer ${
+                        selectedChatId === chat.id
+                          ? 'bg-white dark:bg-gray-800'
+                          : 'hover:bg-gray-100 dark:hover:bg-gray-800/50'
+                      }`}
                     >
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
-                    </button>
-                  ) : (
-                    <div className="group">
-                      <div
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => toggleChatCategory(category.id)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            toggleChatCategory(category.id);
-                          }
-                        }}
-                        className={`w-full flex items-center justify-between px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors cursor-pointer ${
-                          !isOpen &&
-                          selectedChatId &&
-                          categoryChats.some((c) => c.id === selectedChatId)
-                            ? 'bg-gray-100 dark:bg-gray-800/50'
-                            : ''
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <svg
-                            className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${
-                              isOpen ? 'rotate-90' : ''
-                            }`}
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 5l7 7-7 7"
-                            />
-                          </svg>
-                          <div
-                            className="w-2 h-2 rounded-full"
-                            style={{ backgroundColor: color }}
-                          />
-                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            {category.categoryName}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {canAdd && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleAddChat(category.id);
-                              }}
-                              className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-all"
-                              aria-label="채팅 추가"
-                            >
-                              <svg
-                                className="w-4 h-4 text-gray-600 dark:text-gray-400"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M12 4v16m8-8H4"
-                                />
-                              </svg>
-                            </button>
-                          )}
-                          <span className="text-xs text-gray-400 dark:text-gray-500">
-                            {categoryChats.length}
-                          </span>
-                        </div>
-                      </div>
+                      {editingChatId === chat.id ? (
+                        <input
+                          ref={editInputRef}
+                          type="text"
+                          value={editingTitle}
+                          onChange={(e) => setEditingTitle(e.target.value)}
+                          onBlur={commitRename}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') commitRename();
+                            if (e.key === 'Escape') cancelRename();
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          onDoubleClick={(e) => e.stopPropagation()}
+                          className="w-full text-sm font-medium bg-transparent border-b border-accent outline-none text-gray-900 dark:text-white"
+                        />
+                      ) : (
+                        <p
+                          className={`text-sm font-medium truncate ${
+                            selectedChatId === chat.id
+                              ? 'text-gray-900 dark:text-white'
+                              : 'text-gray-700 dark:text-gray-300'
+                          }`}
+                        >
+                          {chat.title}
+                        </p>
+                      )}
+                      <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                        {formatDateTime(chat.createdAt)}
+                      </p>
+                      {chat.lastMessage && (
+                        <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500 truncate">
+                          {chat.lastMessage}
+                        </p>
+                      )}
                     </div>
-                  )}
-
-                  {!isCollapsed && isOpen && (
-                    <ul>
-                      {categoryChats.map((chat) => (
-                        <li key={chat.id}>
-                          <div
-                            onClick={() => onSelectChat(chat.id)}
-                            onDoubleClick={() => startRename(chat.id, chat.title)}
-                            className={`w-full text-left pl-10 pr-4 py-3 border-b border-gray-100 dark:border-gray-800 transition-colors cursor-pointer ${
-                              selectedChatId === chat.id
-                                ? 'bg-white dark:bg-gray-800'
-                                : 'hover:bg-gray-100 dark:hover:bg-gray-800/50'
-                            }`}
-                          >
-                            {editingChatId === chat.id ? (
-                              <input
-                                ref={editInputRef}
-                                type="text"
-                                value={editingTitle}
-                                onChange={(e) => setEditingTitle(e.target.value)}
-                                onBlur={commitRename}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') commitRename();
-                                  if (e.key === 'Escape') cancelRename();
-                                }}
-                                onClick={(e) => e.stopPropagation()}
-                                onDoubleClick={(e) => e.stopPropagation()}
-                                className="w-full text-sm font-medium bg-transparent border-b border-accent outline-none text-gray-900 dark:text-white"
-                              />
-                            ) : (
-                              <p
-                                className={`text-sm font-medium truncate ${
-                                  selectedChatId === chat.id
-                                    ? 'text-gray-900 dark:text-white'
-                                    : 'text-gray-700 dark:text-gray-300'
-                                }`}
-                              >
-                                {chat.title}
-                              </p>
-                            )}
-                            <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                              {formatDateTime(chat.createdAt)}
-                            </p>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              );
-            })}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
       ) : (
@@ -769,37 +714,42 @@ const Sidebar = ({
                               className="flex-1 min-w-0 text-sm font-medium bg-transparent border-b border-accent outline-none text-gray-900 dark:text-white"
                             />
                           ) : (
-                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
-                              {category.categoryName}
-                            </span>
+                            <>
+                              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
+                                {category.categoryName}
+                              </span>
+                              <span className="text-xs text-gray-400 dark:text-gray-500">
+                                {category.notes.length}
+                              </span>
+                            </>
                           )}
                         </div>
-                        <div className="flex items-center gap-2">
-                          <div className="relative" ref={openMenuCategoryId === category.id ? menuRef : undefined}>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setOpenMenuCategoryId(
-                                  openMenuCategoryId === category.id ? null : category.id,
-                                );
-                              }}
-                              className={`p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-all ${
-                                openMenuCategoryId === category.id
-                                  ? 'opacity-100'
-                                  : 'opacity-0 group-hover:opacity-100'
-                              }`}
-                              aria-label="카테고리 메뉴"
+                        <div className="flex-1" />
+                        <div className="relative shrink-0" ref={openMenuCategoryId === category.id ? menuRef : undefined}>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenMenuCategoryId(
+                                openMenuCategoryId === category.id ? null : category.id,
+                              );
+                            }}
+                            className={`p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-all ${
+                              openMenuCategoryId === category.id
+                                ? 'opacity-100'
+                                : 'opacity-0 group-hover:opacity-100'
+                            }`}
+                            aria-label="카테고리 메뉴"
+                          >
+                            <svg
+                              className="w-4 h-4 text-gray-600 dark:text-gray-400"
+                              fill="currentColor"
+                              viewBox="0 0 24 24"
                             >
-                              <svg
-                                className="w-4 h-4 text-gray-600 dark:text-gray-400"
-                                fill="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <circle cx="12" cy="6" r="1.5" />
-                                <circle cx="12" cy="12" r="1.5" />
-                                <circle cx="12" cy="18" r="1.5" />
-                              </svg>
-                            </button>
+                              <circle cx="12" cy="6" r="1.5" />
+                              <circle cx="12" cy="12" r="1.5" />
+                              <circle cx="12" cy="18" r="1.5" />
+                            </svg>
+                          </button>
                             {openMenuCategoryId === category.id && (
                               <div className="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50">
                                 {onAddNote && (
@@ -840,10 +790,6 @@ const Sidebar = ({
                                 )}
                               </div>
                             )}
-                          </div>
-                          <span className="text-xs text-gray-400 dark:text-gray-500">
-                            {category.notes.length}
-                          </span>
                         </div>
                       </div>
                     </div>

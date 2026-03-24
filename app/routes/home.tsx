@@ -474,19 +474,28 @@ export default function Home() {
     setChatRooms((prev) => prev.map((chat) => (chat.id === chatId ? { ...chat, title } : chat)));
   };
 
-  const handleAddChat = (categoryId: number) => {
-    const categoryChats = chatRooms.filter((c) => c.categoryId === categoryId);
-    if (categoryChats.length >= 5) return;
-
+  const handleAddChat = () => {
     const newChat: ChatRoom = {
       id: String(Date.now()),
-      title: `새 채팅 ${categoryChats.length + 1}`,
-      categoryId,
-      createdAt: new Date().toISOString().split('T')[0],
+      title: `새 채팅 ${chatRooms.length + 1}`,
+      createdAt: new Date().toISOString(),
     };
     setChatRooms((prev) => [newChat, ...prev]);
     setSelectedChatId(newChat.id);
+    setIsChatOpen(true);
     if (isMobile) setMobileView('chat');
+  };
+
+  const handleLastMessageUpdate = (chatId: string, message: string) => {
+    setChatRooms((prev) =>
+      prev.map((chat) => (chat.id === chatId ? { ...chat, lastMessage: message } : chat)),
+    );
+  };
+
+  const handleModelChange = (chatId: string, modelId: string) => {
+    setChatRooms((prev) =>
+      prev.map((chat) => (chat.id === chatId ? { ...chat, modelId } : chat)),
+    );
   };
 
   const handleSelectNote = (id: number) => {
@@ -564,6 +573,9 @@ export default function Home() {
           chatTitle={selectedChat.title}
           onClose={() => setSelectedChatId(null)}
           onBack={onBack}
+          selectedModelId={selectedChat.modelId ?? 'dev'}
+          onModelChange={(modelId) => handleModelChange(selectedChat.id, modelId)}
+          onLastMessageUpdate={handleLastMessageUpdate}
         />
       );
     }
@@ -657,6 +669,9 @@ export default function Home() {
             chatTitle={selectedChat.title}
             onClose={() => setSelectedChatId(null)}
             onBack={handleMobileBack}
+            selectedModelId={selectedChat.modelId ?? 'dev'}
+            onModelChange={(modelId) => handleModelChange(selectedChat.id, modelId)}
+            onLastMessageUpdate={handleLastMessageUpdate}
           />
         ) : (
           renderMainContent(handleMobileBack)
