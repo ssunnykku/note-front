@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Note App - Figma Mockup</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f0f0; color: #1a1a1a; padding: 40px; }
+
+  h1 { font-size: 28px; margin-bottom: 8px; }
+  .subtitle { color: #888; font-size: 14px; margin-bottom: 40px; }
+
+  .section-title {
+    font-size: 20px; font-weight: 700; margin: 60px 0 8px; color: #333;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .section-title .badge {
+    font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 10px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .badge-done { background: #d4edda; color: #155724; }
+  .badge-updated { background: #fff3cd; color: #856404; }
+  .badge-new { background: #cce5ff; color: #004085; }
+  .section-desc { color: #666; font-size: 13px; margin-bottom: 24px; }
+
+  .frame-row { display: flex; gap: 32px; flex-wrap: wrap; margin-bottom: 32px; }
+
+  .frame {
+    background: #fff; border-radius: 12px; overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    border: 1px solid #e0e0e0;
+  }
+  .frame-label {
+    font-size: 12px; font-weight: 600; color: #888; margin-bottom: 8px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+
+  /* ===== Common UI Elements ===== */
+  .sidebar {
+    width: 256px; background: #f9fafb; border-right: 1px solid #e5e7eb;
+    display: flex; flex-direction: column; height: 100%;
+  }
+  .sidebar-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; border-bottom: 1px solid #f3f4f6;
+  }
+  .toggle-btn {
+    display: flex; align-items: center; gap: 6px; padding: 4px 8px;
+    border-radius: 6px; font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280;
+    cursor: pointer; border: none; background: none;
+  }
+  .toggle-btn:hover { background: #e5e7eb; }
+  .toggle-btn .icon { width: 14px; height: 14px; }
+  .toggle-btn.active { color: #6366f1; }
+
+  .collapse-btn {
+    width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+    border-radius: 6px; border: none; background: none; color: #6b7280; cursor: pointer;
+  }
+
+  .section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 16px; font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.5px; color: #9ca3af;
+  }
+  .section-count { font-size: 11px; color: #9ca3af; }
+
+  .quick-memo-btn {
+    margin: 0 12px 8px; padding: 8px 12px; border-radius: 8px;
+    border: none; background: none; color: #6b7280; font-size: 13px;
+    font-weight: 500; display: flex; align-items: center; gap: 8px;
+    cursor: pointer; width: calc(100% - 24px);
+  }
+  .quick-memo-btn:hover { background: #e5e7eb; }
+
+  .category-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 16px; cursor: pointer; transition: background 0.15s;
+  }
+  .category-row:hover { background: #f3f4f6; }
+  .category-left { display: flex; align-items: center; gap: 8px; }
+  .arrow { width: 16px; height: 16px; color: #9ca3af; transition: transform 0.2s; }
+  .arrow.open { transform: rotate(90deg); }
+  .cat-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .cat-name { font-size: 13px; font-weight: 500; color: #374151; }
+  .cat-count { font-size: 11px; color: #9ca3af; }
+  .cat-right { display: flex; align-items: center; gap: 8px; }
+  .menu-dots {
+    width: 20px; height: 20px; display: flex; align-items: center;
+    justify-content: center; border-radius: 4px; opacity: 0;
+    color: #6b7280; cursor: pointer; font-size: 14px;
+  }
+  .category-row:hover .menu-dots { opacity: 1; }
+
+  .note-item {
+    display: flex; flex-direction: column; padding: 10px 16px 10px 40px;
+    border-bottom: 1px solid #f3f4f6; cursor: pointer; transition: background 0.15s;
+    position: relative;
+  }
+  .note-item:hover { background: #f9fafb; }
+  .note-item.selected { background: #fff; }
+  .note-title { font-size: 13px; font-weight: 500; color: #374151; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .note-item.selected .note-title { color: #111827; }
+  .note-date { font-size: 11px; color: #9ca3af; margin-top: 4px; }
+  .note-delete {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    width: 20px; height: 20px; display: flex; align-items: center;
+    justify-content: center; opacity: 0; color: #9ca3af; cursor: pointer;
+  }
+  .note-item:hover .note-delete { opacity: 1; }
+
+  .trash-btn {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 16px; border-top: 1px solid #e5e7eb; margin-top: auto;
+    cursor: pointer;
+  }
+  .trash-btn:hover { background: #f3f4f6; }
+  .trash-left { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: #374151; }
+  .trash-icon { width: 16px; height: 16px; color: #9ca3af; }
+
+  .new-cat-btn {
+    padding: 12px; border-top: 1px solid #e5e7eb;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    font-size: 13px; font-weight: 500; color: #6b7280; cursor: pointer;
+  }
+  .new-cat-btn:hover { background: #f3f4f6; }
+
+  /* Main content area */
+  .main-content {
+    flex: 1; display: flex; flex-direction: column; background: #fff;
+  }
+  .content-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 24px; border-bottom: 1px solid #e5e7eb;
+  }
+  .content-cat-badge {
+    font-size: 11px; font-weight: 600; padding: 2px 10px;
+    border-radius: 10px; color: #fff;
+  }
+  .content-title-input {
+    font-size: 24px; font-weight: 700; border: none; outline: none;
+    padding: 24px 24px 8px; color: #111827; width: 100%;
+  }
+  .content-body {
+    flex: 1; padding: 0 24px 24px; font-size: 14px; line-height: 1.7;
+    color: #4b5563;
+  }
+  .content-date { font-size: 12px; color: #9ca3af; padding: 0 24px 16px; }
+
+  /* Chat UI */
+  .chat-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 24px; border-bottom: 1px solid #e5e7eb;
+  }
+  .chat-header-left { display: flex; align-items: center; gap: 8px; }
+  .chat-title { font-size: 18px; font-weight: 600; color: #1f2937; }
+  .sparkle { width: 16px; height: 16px; color: #6366f1; }
+
+  .chat-messages { flex: 1; padding: 24px; overflow-y: auto; }
+  .chat-empty {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; height: 100%; color: #9ca3af; gap: 12px;
+  }
+  .chat-empty .icon { width: 48px; height: 48px; }
+  .chat-empty p { font-size: 13px; }
+
+  .msg { display: flex; margin-bottom: 16px; }
+  .msg.user { justify-content: flex-end; }
+  .msg.ai { justify-content: flex-start; }
+  .msg-bubble {
+    max-width: 70%; padding: 10px 16px; border-radius: 12px;
+    font-size: 13px; line-height: 1.5;
+  }
+  .msg.user .msg-bubble { background: #6366f1; color: #fff; }
+  .msg.ai .msg-bubble { background: #f3f4f6; color: #1f2937; }
+
+  .chat-input-area {
+    padding: 12px 24px 16px; border-top: 1px solid #e5e7eb;
+    display: flex; align-items: flex-end; gap: 12px;
+  }
+  .chat-textarea {
+    flex: 1; padding: 10px 16px; border: 1px solid #d1d5db;
+    border-radius: 8px; font-size: 13px; outline: none; resize: none;
+    background: #f9fafb; min-height: 40px;
+  }
+  .chat-send {
+    width: 36px; height: 36px; border-radius: 8px; background: #6366f1;
+    color: #fff; border: none; display: flex; align-items: center;
+    justify-content: center; cursor: pointer; flex-shrink: 0;
+  }
+  .chat-send.disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Chat list item (updated design) */
+  .chat-list-item {
+    display: flex; flex-direction: column; padding: 12px 16px;
+    border-bottom: 1px solid #f3f4f6; cursor: pointer; transition: background 0.15s;
+  }
+  .chat-list-item:hover { background: #f3f4f6; }
+  .chat-list-item.selected { background: #fff; }
+  .chat-item-title { font-size: 13px; font-weight: 500; color: #374151; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chat-list-item.selected .chat-item-title { color: #111827; }
+  .chat-item-date { font-size: 11px; color: #9ca3af; margin-top: 4px; }
+  .chat-item-preview { font-size: 11px; color: #9ca3af; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* Trash view */
+  .trash-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 16px 24px; border-bottom: 1px solid #e5e7eb;
+  }
+  .trash-title { font-size: 18px; font-weight: 600; color: #1f2937; }
+  .trash-list-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 24px; border-bottom: 1px solid #f3f4f6; cursor: pointer;
+  }
+  .trash-list-item:hover { background: #f9fafb; }
+  .trash-item-info { flex: 1; }
+  .trash-item-title { font-size: 14px; font-weight: 500; color: #374151; }
+  .trash-item-meta { font-size: 12px; color: #9ca3af; margin-top: 4px; }
+  .trash-actions { display: flex; gap: 8px; }
+  .trash-action-btn {
+    padding: 4px 12px; border-radius: 6px; font-size: 12px;
+    font-weight: 500; border: 1px solid #d1d5db; background: #fff;
+    color: #374151; cursor: pointer;
+  }
+  .trash-action-btn.danger { color: #ef4444; border-color: #fca5a5; }
+  .trash-action-btn.restore { color: #6366f1; border-color: #a5b4fc; }
+
+  /* Login/Signup */
+  .auth-container {
+    width: 400px; padding: 48px 32px; display: flex;
+    flex-direction: column; align-items: center;
+  }
+  .auth-logo { font-size: 28px; font-weight: 800; color: #6366f1; margin-bottom: 8px; }
+  .auth-subtitle { font-size: 14px; color: #9ca3af; margin-bottom: 32px; }
+  .auth-input {
+    width: 100%; padding: 10px 14px; border: 1px solid #d1d5db;
+    border-radius: 8px; font-size: 14px; margin-bottom: 12px;
+    outline: none; background: #f9fafb;
+  }
+  .auth-btn {
+    width: 100%; padding: 10px; border-radius: 8px; border: none;
+    background: #6366f1; color: #fff; font-size: 14px; font-weight: 600;
+    cursor: pointer; margin-top: 8px;
+  }
+  .auth-link { font-size: 13px; color: #6366f1; margin-top: 16px; cursor: pointer; }
+
+  /* Drag indicator */
+  .drag-indicator {
+    background: #eff6ff; outline: 1px solid #93c5fd; outline-offset: -1px;
+  }
+
+  /* Confirm modal */
+  .modal-overlay {
+    position: absolute; inset: 0; background: rgba(0,0,0,0.4);
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 12px;
+  }
+  .modal-box {
+    background: #fff; border-radius: 12px; padding: 24px;
+    width: 320px; box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+  }
+  .modal-title { font-size: 15px; font-weight: 600; color: #111827; margin-bottom: 8px; }
+  .modal-desc { font-size: 13px; color: #6b7280; margin-bottom: 20px; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+  .modal-btn {
+    padding: 6px 16px; border-radius: 6px; font-size: 13px;
+    font-weight: 500; cursor: pointer; border: 1px solid #d1d5db;
+    background: #fff; color: #374151;
+  }
+  .modal-btn.danger { background: #ef4444; color: #fff; border-color: #ef4444; }
+
+  /* New chat button for updated design */
+  .new-chat-btn {
+    margin: 12px 16px; padding: 8px 12px; border-radius: 8px;
+    border: 1px dashed #d1d5db; background: none; color: #6b7280;
+    font-size: 13px; font-weight: 500; display: flex;
+    align-items: center; gap: 8px; cursor: pointer; width: calc(100% - 32px);
+  }
+  .new-chat-btn:hover { background: #f3f4f6; border-color: #9ca3af; }
+
+  /* Annotation */
+  .annotation {
+    position: absolute; font-size: 11px; color: #ef4444; font-weight: 600;
+    background: #fef2f2; padding: 2px 8px; border-radius: 4px;
+    border: 1px solid #fca5a5; white-space: nowrap; z-index: 10;
+  }
+  .annotation-line {
+    position: absolute; border-left: 2px dashed #ef4444;
+  }
+
+  /* Mobile frame */
+  .mobile-frame {
+    width: 375px; height: 700px; border-radius: 24px; overflow: hidden;
+    border: 2px solid #d1d5db;
+  }
+  .mobile-statusbar {
+    height: 44px; background: #fff; display: flex;
+    align-items: center; justify-content: space-between;
+    padding: 0 20px; font-size: 12px; font-weight: 600;
+  }
+  .mobile-header {
+    height: 48px; background: #fff; border-bottom: 1px solid #e5e7eb;
+    display: flex; align-items: center; padding: 0 16px; gap: 12px;
+  }
+  .hamburger { width: 24px; height: 24px; color: #374151; }
+  .mobile-title { font-size: 16px; font-weight: 600; }
+
+  /* Model Selector */
+  .model-selector {
+    display: flex; align-items: center; gap: 6px; padding: 4px 10px;
+    border: 1px solid #d1d5db; border-radius: 8px; background: #f9fafb;
+    font-size: 12px; color: #374151; cursor: pointer; position: relative;
+    font-weight: 500; user-select: none;
+  }
+  .model-selector:hover { background: #f3f4f6; border-color: #9ca3af; }
+  .model-selector .model-icon {
+    width: 16px; height: 16px; border-radius: 4px; display: flex;
+    align-items: center; justify-content: center; font-size: 10px;
+    font-weight: 700; color: #fff; flex-shrink: 0;
+  }
+  .model-selector .chevron {
+    width: 12px; height: 12px; color: #9ca3af; flex-shrink: 0;
+  }
+
+  .model-dropdown {
+    position: absolute; top: calc(100% + 6px); left: 0; width: 260px;
+    background: #fff; border-radius: 10px; box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    border: 1px solid #e5e7eb; padding: 6px; z-index: 100;
+  }
+  .model-dropdown-title {
+    font-size: 11px; font-weight: 600; color: #9ca3af; padding: 6px 10px 4px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .model-option {
+    display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+    border-radius: 6px; cursor: pointer; transition: background 0.15s;
+  }
+  .model-option:hover { background: #f3f4f6; }
+  .model-option.selected { background: #eef2ff; }
+  .model-option .model-icon { width: 28px; height: 28px; border-radius: 6px; font-size: 13px; }
+  .model-option-info { flex: 1; }
+  .model-option-name { font-size: 13px; font-weight: 600; color: #111827; }
+  .model-option-desc { font-size: 11px; color: #9ca3af; margin-top: 1px; }
+  .model-option .check { width: 16px; height: 16px; color: #6366f1; flex-shrink: 0; }
+
+  .model-badge {
+    font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 4px;
+    text-transform: uppercase; letter-spacing: 0.3px; margin-left: 4px;
+  }
+  .model-badge.free { background: #d4edda; color: #155724; }
+  .model-badge.pro { background: #eef2ff; color: #4338ca; }
+</style>
+</head>
+<body>
+
+<h1>Note App - UI Design Mockup</h1>
+<p class="subtitle">현재 구현 상태 + 수정된 AI 채팅 기획 반영 | 2026-03-24</p>
+
+<!-- ============================= -->
+<!-- 1. LOGIN / SIGNUP -->
+<!-- ============================= -->
+<div class="section-title">
+  1. 로그인 / 회원가입
+  <span class="badge badge-done">구현 완료</span>
+</div>
+<p class="section-desc">JWT 기반 인증. 로그인 후 메인 화면으로 이동.</p>
+
+<div class="frame-row">
+  <!-- Login -->
+  <div>
+    <div class="frame-label">Login</div>
+    <div class="frame auth-container">
+      <div class="auth-logo">Note</div>
+      <div class="auth-subtitle">로그인하여 노트를 관리하세요</div>
+      <input class="auth-input" placeholder="이메일" value="user@example.com" readonly>
+      <input class="auth-input" type="password" placeholder="비밀번호" value="••••••••" readonly>
+      <button class="auth-btn">로그인</button>
+      <span class="auth-link">계정이 없으신가요? 회원가입</span>
+    </div>
+  </div>
+
+  <!-- Signup -->
+  <div>
+    <div class="frame-label">Sign Up</div>
+    <div class="frame auth-container">
+      <div class="auth-logo">Note</div>
+      <div class="auth-subtitle">새 계정을 만들어보세요</div>
+      <input class="auth-input" placeholder="이름" readonly>
+      <input class="auth-input" placeholder="이메일" readonly>
+      <input class="auth-input" type="password" placeholder="비밀번호" readonly>
+      <input class="auth-input" type="password" placeholder="비밀번호 확인" readonly>
+      <button class="auth-btn">회원가입</button>
+      <span class="auth-link">이미 계정이 있으신가요? 로그인</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============================= -->
+<!-- 2. MAIN - NOTE MODE -->
+<!-- ============================= -->
+<div class="section-title">
+  2. 메인 화면 - 노트 모드
+  <span class="badge badge-done">구현 완료</span>
+</div>
+<p class="section-desc">사이드바(카테고리+노트 목록) + 노트 에디터. 카테고리 관리, 드래그 이동, 빠른 메모 지원.</p>
+
+<div class="frame-row">
+  <div>
+    <div class="frame-label">Desktop - Note Mode</div>
+    <div class="frame" style="width: 900px; height: 580px; display: flex;">
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <div class="sidebar-header">
+          <button class="toggle-btn">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
+            AI 채팅
+          </button>
+          <button class="collapse-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 19l-7-7 7-7"/></svg>
+          </button>
+        </div>
+
+        <!-- Quick Memo -->
+        <button class="quick-memo-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v16m8-8H4"/></svg>
+          빠른 메모
+        </button>
+
+        <div class="section-header">
+          <span>기록</span>
+          <span class="section-count">12</span>
+        </div>
+
+        <div style="flex: 1; overflow-y: auto;">
+          <!-- Uncategorized -->
+          <div class="category-row">
+            <div class="category-left">
+              <svg class="arrow open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              <span class="cat-name">미분류</span>
+            </div>
+            <span class="cat-count">2</span>
+          </div>
+          <div class="note-item">
+            <span class="note-title">빠른 아이디어 메모</span>
+            <span class="note-date">작성중</span>
+          </div>
+          <div class="note-item">
+            <span class="note-title">할일 정리</span>
+            <span class="note-date">2026.03.22 14:30</span>
+          </div>
+
+          <!-- Category 1 -->
+          <div class="category-row">
+            <div class="category-left">
+              <svg class="arrow open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg>
+              <div class="cat-dot" style="background: #6366f1;"></div>
+              <span class="cat-name">프로젝트</span>
+              <span class="cat-count">4</span>
+            </div>
+            <div class="cat-right">
+              <span class="menu-dots">⋮</span>
+            </div>
+          </div>
+          <div class="note-item selected">
+            <span class="note-title">API 설계 문서</span>
+            <span class="note-date">2026.03.23 10:15</span>
+            <span class="note-delete">🗑</span>
+          </div>
+          <div class="note-item">
+            <span class="note-title">DB 스키마 정리</span>
+            <span class="note-date">2026.03.22 16:45</span>
+          </div>
+          <div class="note-item">
+            <span class="note-title">프론트엔드 컴포넌트 구조</span>
+            <span class="note-date">2026.03.21 09:00</span>
+          </div>
+
+          <!-- Category 2 -->
+          <div class="category-row">
+            <div class="category-left">
+              <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg>
+              <div class="cat-dot" style="background: #f59e0b;"></div>
+              <span class="cat-name">학습</span>
+              <span class="cat-count">3</span>
+            </div>
+            <div class="cat-right">
+              <span class="menu-dots">⋮</span>
+            </div>
+          </div>
+
+          <!-- Category 3 -->
+          <div class="category-row">
+            <div class="category-left">
+              <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg>
+              <div class="cat-dot" style="background: #10b981;"></div>
+              <span class="cat-name">일상</span>
+              <span class="cat-count">3</span>
+            </div>
+            <div class="cat-right">
+              <span class="menu-dots">⋮</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Trash -->
+        <div class="trash-btn">
+          <div class="trash-left">
+            <svg class="trash-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            휴지통
+          </div>
+          <span class="section-count">3</span>
+        </div>
+
+        <!-- New Category -->
+        <div class="new-cat-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v16m8-8H4"/></svg>
+          New Category
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <div class="main-content">
+        <div class="content-header">
+          <span class="content-cat-badge" style="background: #6366f1;">프로젝트</span>
+          <span style="font-size: 12px; color: #9ca3af;">2026.03.23 10:15</span>
+        </div>
+        <input class="content-title-input" value="API 설계 문서" readonly>
+        <div class="content-body">
+          <p><strong>1. 인증 API</strong></p>
+          <p>POST /auth/login - 로그인</p>
+          <p>POST /auth/signup - 회원가입</p>
+          <p>POST /auth/refresh - 토큰 갱신</p>
+          <br>
+          <p><strong>2. 노트 API</strong></p>
+          <p>GET /notes - 노트 목록 조회</p>
+          <p>GET /notes/:id - 노트 상세 조회</p>
+          <p>POST /notes - 노트 생성</p>
+          <p>PATCH /notes/:id - 노트 수정 (자동 저장)</p>
+          <p>DELETE /notes/:id - 노트 삭제 (soft delete)</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================= -->
+<!-- 3. CATEGORY MANAGEMENT -->
+<!-- ============================= -->
+<div class="section-title">
+  3. 카테고리 관리
+  <span class="badge badge-done">구현 완료</span>
+</div>
+<p class="section-desc">카테고리 추가, 이름 변경, 삭제. 삭제 시 확인 모달 + 노트 미분류 이동. 노트 드래그 이동.</p>
+
+<div class="frame-row">
+  <!-- Context Menu -->
+  <div>
+    <div class="frame-label">Category Context Menu</div>
+    <div class="frame" style="width: 280px; padding: 16px; position: relative;">
+      <div class="category-row" style="background: #f3f4f6; border-radius: 6px;">
+        <div class="category-left">
+          <svg class="arrow open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg>
+          <div class="cat-dot" style="background: #6366f1;"></div>
+          <span class="cat-name">프로젝트</span>
+          <span class="cat-count">4</span>
+        </div>
+        <div class="cat-right">
+          <span class="menu-dots" style="opacity: 1;">⋮</span>
+        </div>
+      </div>
+      <!-- Dropdown -->
+      <div style="position: absolute; right: 24px; top: 48px; width: 128px; background: #fff; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.12); border: 1px solid #e5e7eb; padding: 4px 0; z-index: 10;">
+        <div style="padding: 6px 12px; font-size: 13px; color: #374151; cursor: pointer;">노트 추가</div>
+        <div style="padding: 6px 12px; font-size: 13px; color: #374151; cursor: pointer;">이름 변경</div>
+        <div style="padding: 6px 12px; font-size: 13px; color: #ef4444; cursor: pointer;">삭제</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Modal -->
+  <div>
+    <div class="frame-label">Delete Confirm Modal</div>
+    <div class="frame" style="width: 380px; height: 200px; position: relative; background: #f9fafb;">
+      <div class="modal-overlay">
+        <div class="modal-box">
+          <div class="modal-title">"프로젝트"을(를) 삭제하시겠습니까?</div>
+          <div class="modal-desc">포함된 노트 4개는 미분류로 이동됩니다.</div>
+          <div class="modal-actions">
+            <button class="modal-btn">취소</button>
+            <button class="modal-btn danger">삭제</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Drag & Drop -->
+  <div>
+    <div class="frame-label">Drag & Drop to Category</div>
+    <div class="frame" style="width: 280px; padding: 0;">
+      <div class="category-row">
+        <div class="category-left">
+          <svg class="arrow open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg>
+          <div class="cat-dot" style="background: #6366f1;"></div>
+          <span class="cat-name">프로젝트</span>
+        </div>
+      </div>
+      <div class="note-item" style="opacity: 0.5; background: #eff6ff;">
+        <span class="note-title" style="font-style: italic;">📄 드래그 중인 노트</span>
+        <span class="note-date">이동 중...</span>
+      </div>
+      <div class="category-row drag-indicator" style="border-radius: 4px;">
+        <div class="category-left">
+          <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg>
+          <div class="cat-dot" style="background: #f59e0b;"></div>
+          <span class="cat-name" style="color: #2563eb;">학습 ← 여기로 이동</span>
+        </div>
+      </div>
+      <div class="category-row">
+        <div class="category-left">
+          <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg>
+          <div class="cat-dot" style="background: #10b981;"></div>
+          <span class="cat-name">일상</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Inline Category Name Edit -->
+  <div>
+    <div class="frame-label">Inline Category Rename</div>
+    <div class="frame" style="width: 280px; padding: 0;">
+      <div class="category-row">
+        <div class="category-left">
+          <svg class="arrow open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg>
+          <div class="cat-dot" style="background: #6366f1;"></div>
+          <input style="flex: 1; min-width: 0; font-size: 13px; font-weight: 500; background: transparent; border: none; border-bottom: 2px solid #6366f1; outline: none; color: #111827; padding: 2px 0;" value="프로젝트 메모">
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================= -->
+<!-- 4. TRASH VIEW -->
+<!-- ============================= -->
+<div class="section-title">
+  4. 휴지통
+  <span class="badge badge-done">구현 완료</span>
+</div>
+<p class="section-desc">삭제된 노트 목록. 복원 또는 영구 삭제 가능.</p>
+
+<div class="frame-row">
+  <div>
+    <div class="frame-label">Trash View</div>
+    <div class="frame" style="width: 640px;">
+      <div class="trash-header">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        <span class="trash-title">휴지통</span>
+        <span style="font-size: 13px; color: #9ca3af;">3개</span>
+      </div>
+      <div class="trash-list-item">
+        <div class="trash-item-info">
+          <div class="trash-item-title">프로젝트 회의 메모</div>
+          <div class="trash-item-meta">삭제일: 2026.03.18 10:22 · Q1 목표 정리, 디자인 시스템...</div>
+        </div>
+        <div class="trash-actions">
+          <button class="trash-action-btn restore">복원</button>
+          <button class="trash-action-btn danger">영구 삭제</button>
+        </div>
+      </div>
+      <div class="trash-list-item">
+        <div class="trash-item-info">
+          <div class="trash-item-title">API 엔드포인트 정리</div>
+          <div class="trash-item-meta">삭제일: 2026.03.17 08:15 · GET /notes, POST /notes...</div>
+        </div>
+        <div class="trash-actions">
+          <button class="trash-action-btn restore">복원</button>
+          <button class="trash-action-btn danger">영구 삭제</button>
+        </div>
+      </div>
+      <div class="trash-list-item">
+        <div class="trash-item-info">
+          <div class="trash-item-title">읽을 책 목록</div>
+          <div class="trash-item-meta">삭제일: 2026.03.16 19:30 · 1. Clean Architecture...</div>
+        </div>
+        <div class="trash-actions">
+          <button class="trash-action-btn restore">복원</button>
+          <button class="trash-action-btn danger">영구 삭제</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================= -->
+<!-- 5. AI CHAT - UPDATED DESIGN -->
+<!-- ============================= -->
+<div class="section-title">
+  5. AI 채팅 - 수정된 기획
+  <span class="badge badge-updated">기획 변경</span>
+</div>
+<p class="section-desc">
+  <strong>변경 사항:</strong> 채팅을 노트 카테고리에서 <strong>분리</strong>. 카테고리 기반 → <strong>플랫 리스트 (최신순 정렬)</strong>로 변경.<br>
+  기존: 노트 카테고리와 동일한 카테고리 구조 사용 → 변경: 독립적인 채팅 목록 + 새 채팅 버튼
+</p>
+
+<div class="frame-row">
+  <div>
+    <div class="frame-label">Desktop - AI Chat Mode (Updated)</div>
+    <div class="frame" style="width: 900px; height: 580px; display: flex;">
+      <!-- Sidebar - Chat Mode -->
+      <div class="sidebar">
+        <div class="sidebar-header">
+          <button class="toggle-btn">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            기록
+          </button>
+          <button class="collapse-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 19l-7-7 7-7"/></svg>
+          </button>
+        </div>
+
+        <!-- New Chat Button -->
+        <button class="new-chat-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v16m8-8H4"/></svg>
+          새 채팅
+        </button>
+
+        <div class="section-header">
+          <span>AI 채팅</span>
+          <span class="section-count">5</span>
+        </div>
+
+        <div style="flex: 1; overflow-y: auto;">
+          <!-- Chat items - flat list, sorted by newest -->
+          <div class="chat-list-item selected">
+            <span class="chat-item-title">React 컴포넌트 설계 질문</span>
+            <span class="chat-item-date">2026.03.24 09:30</span>
+            <span class="chat-item-preview">컴포넌트 분리 기준이 궁금해요...</span>
+          </div>
+          <div class="chat-list-item">
+            <span class="chat-item-title">Spring Boot JWT 구현</span>
+            <span class="chat-item-date">2026.03.23 15:20</span>
+            <span class="chat-item-preview">refresh token rotation 관련...</span>
+          </div>
+          <div class="chat-list-item">
+            <span class="chat-item-title">TypeScript 제네릭 활용</span>
+            <span class="chat-item-date">2026.03.23 11:00</span>
+            <span class="chat-item-preview">API 응답 타입을 제네릭으로...</span>
+          </div>
+          <div class="chat-list-item">
+            <span class="chat-item-title">Tailwind CSS 다크모드</span>
+            <span class="chat-item-date">2026.03.22 18:45</span>
+            <span class="chat-item-preview">시스템 설정 기반으로 전환...</span>
+          </div>
+          <div class="chat-list-item">
+            <span class="chat-item-title">DB 인덱스 최적화</span>
+            <span class="chat-item-date">2026.03.21 14:10</span>
+            <span class="chat-item-preview">복합 인덱스 설계 방법...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main - Chat Panel -->
+      <div class="main-content">
+        <div class="chat-header">
+          <div class="chat-header-left">
+            <svg class="sparkle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
+            <span class="chat-title">React 컴포넌트 설계 질문</span>
+          </div>
+          <button class="collapse-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="chat-messages">
+          <div class="msg user">
+            <div class="msg-bubble">사이드바 컴포넌트가 너무 커졌는데, 어떻게 분리하면 좋을까요?</div>
+          </div>
+          <div class="msg ai">
+            <div class="msg-bubble">사이드바를 기능 단위로 분리하는 것을 추천드립니다. 예를 들어:<br><br>1. <strong>SidebarNoteList</strong> - 노트 목록 렌더링<br>2. <strong>SidebarChatList</strong> - 채팅 목록 렌더링<br>3. <strong>SidebarCategoryGroup</strong> - 카테고리 그룹<br><br>각 컴포넌트는 자체 상태를 관리하고, 부모로부터 콜백만 받는 구조가 좋습니다.</div>
+          </div>
+          <div class="msg user">
+            <div class="msg-bubble">카테고리 그룹 컴포넌트의 props는 어떻게 설계하면 좋을까요?</div>
+          </div>
+          <div class="msg ai">
+            <div class="msg-bubble">핵심 props만 전달하세요:<br><br><code>interface CategoryGroupProps {<br>&nbsp;&nbsp;category: Category;<br>&nbsp;&nbsp;isOpen: boolean;<br>&nbsp;&nbsp;onToggle: () => void;<br>&nbsp;&nbsp;children: ReactNode;<br>}</code><br><br>노트 아이템 렌더링은 children으로 위임하면 유연합니다.</div>
+          </div>
+        </div>
+        <div style="border-top: 1px solid #e5e7eb; padding: 10px 24px 4px;">
+          <!-- Model selector above input -->
+          <div class="model-selector" style="display: inline-flex; margin-bottom: 8px;">
+            <span style="font-size: 12px;">💻</span>
+            <span>개발</span>
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+        </div>
+        <div style="display: flex; align-items: flex-end; gap: 12px; padding: 0 24px 16px;">
+          <input class="chat-textarea" placeholder="메시지를 입력하세요..." style="margin: 0;">
+          <button class="chat-send disabled">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Chat Empty State -->
+<div class="frame-row">
+  <div>
+    <div class="frame-label">AI Chat - Empty State (No Chat Selected)</div>
+    <div class="frame" style="width: 640px; height: 400px; display: flex; flex-direction: column;">
+      <div class="chat-empty" style="flex: 1;">
+        <svg class="icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
+        <p>AI에게 질문해보세요</p>
+      </div>
+      <div class="chat-input-area">
+        <input class="chat-textarea" placeholder="메시지를 입력하세요...">
+        <button class="chat-send disabled">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="frame-label">AI Chat - No Chats Yet</div>
+    <div class="frame" style="width: 640px; height: 400px; display: flex; flex-direction: column;">
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #9ca3af; gap: 12px;">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
+        <p style="font-size: 13px;">왼쪽 목록에서 채팅을 선택하거나 추가해주세요</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================= -->
+<!-- 6. BEFORE/AFTER COMPARISON -->
+<!-- ============================= -->
+<div class="section-title">
+  6. AI 채팅 사이드바 변경 비교
+  <span class="badge badge-updated">Before / After</span>
+</div>
+<p class="section-desc">기존 카테고리 공유 구조 → 독립 플랫 리스트로 변경</p>
+
+<div class="frame-row">
+  <!-- BEFORE -->
+  <div>
+    <div class="frame-label" style="color: #ef4444;">BEFORE - Category Shared (삭제 예정)</div>
+    <div class="frame" style="width: 270px; opacity: 0.7; border-color: #fca5a5;">
+      <div class="sidebar-header" style="padding: 8px 12px;">
+        <button class="toggle-btn" style="font-size: 10px;">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          기록
+        </button>
+      </div>
+      <div class="section-header" style="padding: 6px 12px;">
+        <span style="font-size: 10px;">채팅 목록</span>
+        <span style="font-size: 10px;">3</span>
+      </div>
+      <!-- Category based chat list -->
+      <div class="category-row" style="padding: 6px 12px;">
+        <div class="category-left">
+          <svg class="arrow open" style="width: 12px; height: 12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg>
+          <div class="cat-dot" style="background: #6366f1; width: 6px; height: 6px;"></div>
+          <span style="font-size: 12px; color: #374151;">프로젝트</span>
+        </div>
+        <span style="font-size: 10px; color: #9ca3af;">2</span>
+      </div>
+      <div style="padding: 6px 12px 6px 32px; border-bottom: 1px solid #f3f4f6;">
+        <span style="font-size: 11px; color: #374151;">채팅 1</span><br>
+        <span style="font-size: 10px; color: #9ca3af;">2026.03.23</span>
+      </div>
+      <div style="padding: 6px 12px 6px 32px; border-bottom: 1px solid #f3f4f6;">
+        <span style="font-size: 11px; color: #374151;">채팅 2</span><br>
+        <span style="font-size: 10px; color: #9ca3af;">2026.03.22</span>
+      </div>
+      <div class="category-row" style="padding: 6px 12px;">
+        <div class="category-left">
+          <svg class="arrow" style="width: 12px; height: 12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg>
+          <div class="cat-dot" style="background: #f59e0b; width: 6px; height: 6px;"></div>
+          <span style="font-size: 12px; color: #374151;">학습</span>
+        </div>
+        <span style="font-size: 10px; color: #9ca3af;">1</span>
+      </div>
+      <div style="padding: 16px; text-align: center; color: #ef4444; font-size: 11px; font-weight: 600;">
+        문제: 카테고리와 채팅이 억지 매핑<br>
+        카테고리당 5개 제한 부자연스러움
+      </div>
+    </div>
+  </div>
+
+  <!-- AFTER -->
+  <div>
+    <div class="frame-label" style="color: #10b981;">AFTER - Independent Flat List (적용 예정)</div>
+    <div class="frame" style="width: 270px; border-color: #6ee7b7;">
+      <div class="sidebar-header" style="padding: 8px 12px;">
+        <button class="toggle-btn" style="font-size: 10px;">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          기록
+        </button>
+      </div>
+
+      <!-- New Chat Button -->
+      <div style="margin: 8px 12px; padding: 6px 10px; border-radius: 6px; border: 1px dashed #d1d5db; font-size: 11px; color: #6b7280; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v16m8-8H4"/></svg>
+        새 채팅
+      </div>
+
+      <div class="section-header" style="padding: 6px 12px;">
+        <span style="font-size: 10px;">AI 채팅</span>
+        <span style="font-size: 10px;">5</span>
+      </div>
+
+      <!-- Flat chat list -->
+      <div style="padding: 8px 12px; background: #fff; border-bottom: 1px solid #f3f4f6;">
+        <span style="font-size: 11px; font-weight: 500; color: #111827;">React 컴포넌트 설계 질문</span><br>
+        <span style="font-size: 10px; color: #9ca3af;">2026.03.24 09:30</span>
+        <span style="font-size: 10px; color: #9ca3af; margin-left: 4px;">컴포넌트 분리 기준이...</span>
+      </div>
+      <div style="padding: 8px 12px; border-bottom: 1px solid #f3f4f6;">
+        <span style="font-size: 11px; font-weight: 500; color: #374151;">Spring Boot JWT 구현</span><br>
+        <span style="font-size: 10px; color: #9ca3af;">2026.03.23 15:20</span>
+      </div>
+      <div style="padding: 8px 12px; border-bottom: 1px solid #f3f4f6;">
+        <span style="font-size: 11px; font-weight: 500; color: #374151;">TypeScript 제네릭 활용</span><br>
+        <span style="font-size: 10px; color: #9ca3af;">2026.03.23 11:00</span>
+      </div>
+      <div style="padding: 8px 12px; border-bottom: 1px solid #f3f4f6;">
+        <span style="font-size: 11px; font-weight: 500; color: #374151;">Tailwind CSS 다크모드</span><br>
+        <span style="font-size: 10px; color: #9ca3af;">2026.03.22 18:45</span>
+      </div>
+      <div style="padding: 8px 12px; border-bottom: 1px solid #f3f4f6;">
+        <span style="font-size: 11px; font-weight: 500; color: #374151;">DB 인덱스 최적화</span><br>
+        <span style="font-size: 10px; color: #9ca3af;">2026.03.21 14:10</span>
+      </div>
+
+      <div style="padding: 12px; text-align: center; color: #10b981; font-size: 11px; font-weight: 600;">
+        개선: 카테고리 무관, 독립 관리<br>
+        최신순 정렬, 제한 없음
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================= -->
+<!-- 7. MOBILE VIEWS -->
+<!-- ============================= -->
+<div class="section-title">
+  7. 모바일 화면
+  <span class="badge badge-done">구현 완료</span>
+</div>
+<p class="section-desc">모바일은 list/editor/chat 3개 뷰를 전환. 사이드바는 오버레이로 열림.</p>
+
+<div class="frame-row">
+  <!-- Mobile - Note List -->
+  <div>
+    <div class="frame-label">Mobile - Note List</div>
+    <div class="frame mobile-frame" style="display: flex; flex-direction: column;">
+      <div class="mobile-statusbar">
+        <span>9:41</span>
+        <span>📶 🔋</span>
+      </div>
+      <div class="mobile-header">
+        <span class="mobile-title">Note</span>
+      </div>
+      <div style="flex: 1; overflow-y: auto; background: #f9fafb;">
+        <div style="padding: 8px 16px;">
+          <button style="width: 100%; padding: 8px 12px; border-radius: 8px; border: none; background: none; color: #6b7280; font-size: 13px; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v16m8-8H4"/></svg>
+            빠른 메모
+          </button>
+        </div>
+        <div class="section-header"><span>기록</span><span class="section-count">8</span></div>
+        <div class="category-row">
+          <div class="category-left">
+            <svg class="arrow open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg>
+            <div class="cat-dot" style="background: #6366f1;"></div>
+            <span class="cat-name">프로젝트</span>
+            <span class="cat-count">4</span>
+          </div>
+        </div>
+        <div class="note-item selected">
+          <span class="note-title">API 설계 문서</span>
+          <span class="note-date">2026.03.23 10:15</span>
+        </div>
+        <div class="note-item">
+          <span class="note-title">DB 스키마 정리</span>
+          <span class="note-date">2026.03.22 16:45</span>
+        </div>
+        <div class="category-row">
+          <div class="category-left">
+            <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg>
+            <div class="cat-dot" style="background: #f59e0b;"></div>
+            <span class="cat-name">학습</span>
+            <span class="cat-count">3</span>
+          </div>
+        </div>
+      </div>
+      <div style="padding: 8px 12px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #6b7280;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          휴지통 <span style="color: #9ca3af;">3</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: #6366f1; font-weight: 600; cursor: pointer;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
+          AI 채팅
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile - Editor -->
+  <div>
+    <div class="frame-label">Mobile - Note Editor</div>
+    <div class="frame mobile-frame" style="display: flex; flex-direction: column;">
+      <div class="mobile-statusbar">
+        <span>9:41</span>
+        <span>📶 🔋</span>
+      </div>
+      <div class="mobile-header">
+        <svg class="hamburger" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 19l-7-7 7-7"/></svg>
+        <span class="content-cat-badge" style="background: #6366f1; font-size: 10px; padding: 1px 8px;">프로젝트</span>
+      </div>
+      <div style="flex: 1; overflow-y: auto; padding: 16px;">
+        <div style="font-size: 20px; font-weight: 700; color: #111827; margin-bottom: 8px;">API 설계 문서</div>
+        <div style="font-size: 12px; color: #9ca3af; margin-bottom: 16px;">2026.03.23 10:15</div>
+        <div style="font-size: 14px; line-height: 1.7; color: #4b5563;">
+          <p><strong>1. 인증 API</strong></p>
+          <p>POST /auth/login - 로그인</p>
+          <p>POST /auth/signup - 회원가입</p>
+          <br>
+          <p><strong>2. 노트 API</strong></p>
+          <p>GET /notes - 노트 목록</p>
+          <p>POST /notes - 노트 생성</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile - AI Chat -->
+  <div>
+    <div class="frame-label">Mobile - AI Chat (Updated)</div>
+    <div class="frame mobile-frame" style="display: flex; flex-direction: column;">
+      <div class="mobile-statusbar">
+        <span>9:41</span>
+        <span>📶 🔋</span>
+      </div>
+      <div class="mobile-header">
+        <svg class="hamburger" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 19l-7-7 7-7"/></svg>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
+        <span style="font-size: 15px; font-weight: 600;">React 컴포넌트 설계 질문</span>
+      </div>
+      <div style="flex: 1; overflow-y: auto; padding: 16px;">
+        <div class="msg user">
+          <div class="msg-bubble" style="font-size: 13px;">사이드바 컴포넌트가 너무 커졌는데, 어떻게 분리하면 좋을까요?</div>
+        </div>
+        <div class="msg ai">
+          <div class="msg-bubble" style="font-size: 13px; max-width: 85%;">사이드바를 기능 단위로 분리하는 것을 추천드립니다.<br><br>1. SidebarNoteList<br>2. SidebarChatList<br>3. SidebarCategoryGroup</div>
+        </div>
+        <div class="msg user">
+          <div class="msg-bubble" style="font-size: 13px;">props는 어떻게?</div>
+        </div>
+      </div>
+      <div class="chat-input-area" style="padding: 8px 12px 12px;">
+        <input class="chat-textarea" placeholder="메시지를 입력하세요..." style="font-size: 13px;">
+        <button class="chat-send disabled" style="width: 32px; height: 32px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================= -->
+<!-- 8. CHAT RENAME -->
+<!-- ============================= -->
+<div class="section-title">
+  8. 채팅 이름 변경 (Updated)
+  <span class="badge badge-updated">기획 변경</span>
+</div>
+<p class="section-desc">더블클릭으로 채팅 제목 인라인 편집. 카테고리 없이 단순 플랫 리스트에서 동작.</p>
+
+<div class="frame-row">
+  <div>
+    <div class="frame-label">Chat Rename - Inline Edit</div>
+    <div class="frame" style="width: 270px; padding: 0;">
+      <div class="section-header" style="padding: 6px 12px;">
+        <span style="font-size: 10px;">AI 채팅</span>
+      </div>
+      <div style="padding: 8px 12px; background: #fff; border-bottom: 1px solid #f3f4f6;">
+        <input style="width: 100%; font-size: 12px; font-weight: 500; background: transparent; border: none; border-bottom: 2px solid #6366f1; outline: none; color: #111827; padding: 2px 0;" value="React 컴포넌트 설계 질문">
+        <span style="font-size: 10px; color: #9ca3af; display: block; margin-top: 4px;">2026.03.24 09:30</span>
+      </div>
+      <div style="padding: 8px 12px; border-bottom: 1px solid #f3f4f6;">
+        <span style="font-size: 12px; font-weight: 500; color: #374151;">Spring Boot JWT 구현</span><br>
+        <span style="font-size: 10px; color: #9ca3af;">2026.03.23 15:20</span>
+      </div>
+      <div style="padding: 8px 12px; border-bottom: 1px solid #f3f4f6;">
+        <span style="font-size: 12px; font-weight: 500; color: #374151;">TypeScript 제네릭 활용</span><br>
+        <span style="font-size: 10px; color: #9ca3af;">2026.03.23 11:00</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================= -->
+<!-- 9. MODEL SELECTOR -->
+<!-- ============================= -->
+<div class="section-title">
+  9. AI 모델 선택 (도메인 특화 모델)
+  <span class="badge badge-new">신규</span>
+</div>
+<p class="section-desc">채팅 입력 영역 위에 도메인 특화 모델 선택 드롭다운. 채팅방마다 독립적으로 모델 지정 가능. 자체 학습시킨 도메인별 LLM을 선택.</p>
+
+<div class="frame-row">
+  <!-- Model Selector - Closed States -->
+  <div>
+    <div class="frame-label">Model Selector - Closed (각 모델별)</div>
+    <div class="frame" style="width: 400px; padding: 24px;">
+      <div style="margin-bottom: 16px; font-size: 12px; color: #9ca3af;">채팅 입력 영역 위에 표시됨</div>
+
+      <div style="margin-bottom: 12px;">
+        <div class="model-selector" style="display: inline-flex;">
+          <span style="font-size: 12px;">💻</span>
+          <span>개발</span>
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 12px;">
+        <div class="model-selector" style="display: inline-flex;">
+          <span style="font-size: 12px;">📚</span>
+          <span>학습</span>
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 12px;">
+        <div class="model-selector" style="display: inline-flex;">
+          <span style="font-size: 12px;">💪</span>
+          <span>운동</span>
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 12px;">
+        <div class="model-selector" style="display: inline-flex;">
+          <span style="font-size: 12px;">✍️</span>
+          <span>글쓰기</span>
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+      </div>
+
+      <div>
+        <div class="model-selector" style="display: inline-flex;">
+          <span style="font-size: 12px;">☀️</span>
+          <span>일상</span>
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Model Selector - Dropdown Open -->
+  <div>
+    <div class="frame-label">Model Selector - Dropdown Open</div>
+    <div class="frame" style="width: 320px; padding: 24px; min-height: 400px; position: relative;">
+      <!-- Trigger -->
+      <div class="model-selector" style="display: inline-flex; background: #f3f4f6; border-color: #9ca3af;">
+        <span style="font-size: 12px;">💻</span>
+        <span>개발</span>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transform: rotate(180deg);"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+
+      <!-- Dropdown -->
+      <div style="margin-top: 6px; width: 260px; background: #fff; border-radius: 10px; box-shadow: 0 8px 32px rgba(0,0,0,0.15); border: 1px solid #e5e7eb; padding: 6px;">
+        <div style="font-size: 11px; font-weight: 600; color: #9ca3af; padding: 6px 10px 4px; text-transform: uppercase; letter-spacing: 0.5px;">모델 선택</div>
+
+        <!-- 개발 - selected -->
+        <div class="model-option selected">
+          <div style="width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 15px; background: rgba(99,102,241,0.12);">💻</div>
+          <div class="model-option-info">
+            <div class="model-option-name">개발</div>
+            <div class="model-option-desc">프로그래밍·개발 질문 특화</div>
+          </div>
+          <svg class="check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+
+        <!-- 학습 -->
+        <div class="model-option">
+          <div style="width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 15px; background: rgba(245,158,11,0.12);">📚</div>
+          <div class="model-option-info">
+            <div class="model-option-name">학습</div>
+            <div class="model-option-desc">공부·학습 도우미</div>
+          </div>
+        </div>
+
+        <!-- 운동 -->
+        <div class="model-option">
+          <div style="width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 15px; background: rgba(16,185,129,0.12);">💪</div>
+          <div class="model-option-info">
+            <div class="model-option-name">운동</div>
+            <div class="model-option-desc">운동·건강 관리 특화</div>
+          </div>
+        </div>
+
+        <!-- 글쓰기 -->
+        <div class="model-option">
+          <div style="width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 15px; background: rgba(236,72,153,0.12);">✍️</div>
+          <div class="model-option-info">
+            <div class="model-option-name">글쓰기</div>
+            <div class="model-option-desc">문서·글쓰기 도우미</div>
+          </div>
+        </div>
+
+        <!-- 일상 -->
+        <div class="model-option">
+          <div style="width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 15px; background: rgba(139,92,246,0.12);">☀️</div>
+          <div class="model-option-info">
+            <div class="model-option-name">일상</div>
+            <div class="model-option-desc">일상 대화·일정 관리</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Model Selector in Context -->
+<div class="frame-row">
+  <div>
+    <div class="frame-label">Chat Input Area with Model Selector (Full Context)</div>
+    <div class="frame" style="width: 640px;">
+      <!-- Last message -->
+      <div style="padding: 16px 24px;">
+        <div class="msg ai">
+          <div class="msg-bubble">사이드바를 기능 단위로 분리하는 것을 추천드립니다.</div>
+        </div>
+      </div>
+      <!-- Input area with model selector -->
+      <div style="border-top: 1px solid #e5e7eb; padding: 10px 24px 4px;">
+        <div class="model-selector" style="display: inline-flex; margin-bottom: 8px;">
+          <span style="font-size: 12px;">💻</span>
+          <span>개발</span>
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+      </div>
+      <div style="display: flex; align-items: flex-end; gap: 12px; padding: 0 24px 16px;">
+        <input class="chat-textarea" placeholder="메시지를 입력하세요..." value="컴포넌트 분리 기준이 궁금해요" style="margin: 0;">
+        <button class="chat-send">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile version -->
+  <div>
+    <div class="frame-label">Mobile - Chat Input with Model Selector</div>
+    <div class="frame" style="width: 375px;">
+      <div style="padding: 12px 16px;">
+        <div class="msg user">
+          <div class="msg-bubble" style="font-size: 13px;">오늘 하체 루틴 추천해줘</div>
+        </div>
+      </div>
+      <div style="border-top: 1px solid #e5e7eb; padding: 8px 12px 4px;">
+        <div class="model-selector" style="display: inline-flex; margin-bottom: 6px; padding: 3px 8px; font-size: 11px;">
+          <span style="font-size: 11px;">💪</span>
+          <span>운동</span>
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+      </div>
+      <div style="display: flex; align-items: flex-end; gap: 8px; padding: 0 12px 12px;">
+        <input class="chat-textarea" placeholder="메시지를 입력하세요..." style="font-size: 13px; margin: 0;">
+        <button class="chat-send disabled" style="width: 32px; height: 32px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- New Chat with Default Model -->
+<div class="frame-row">
+  <div>
+    <div class="frame-label">New Chat - Empty State with Model Selector</div>
+    <div class="frame" style="width: 640px; height: 400px; display: flex; flex-direction: column;">
+      <div class="chat-header">
+        <div class="chat-header-left">
+          <svg class="sparkle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
+          <span class="chat-title">새 채팅</span>
+        </div>
+      </div>
+      <div class="chat-empty" style="flex: 1;">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
+        <p style="font-size: 13px;">AI에게 질문해보세요</p>
+      </div>
+      <div style="border-top: 1px solid #e5e7eb; padding: 10px 24px 4px;">
+        <div class="model-selector" style="display: inline-flex; margin-bottom: 8px;">
+          <span style="font-size: 12px;">💻</span>
+          <span>개발</span>
+          <span style="font-size: 10px; color: #9ca3af; margin-left: 2px;">(기본)</span>
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+      </div>
+      <div style="display: flex; align-items: flex-end; gap: 12px; padding: 0 24px 16px;">
+        <input class="chat-textarea" placeholder="메시지를 입력하세요...">
+        <button class="chat-send disabled">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================= -->
+<!-- 10. DESIGN SPEC SUMMARY -->
+<!-- ============================= -->
+<div class="section-title">
+  10. 디자인 스펙 요약
+</div>
+
+<div class="frame-row">
+  <div class="frame" style="width: 100%; max-width: 800px; padding: 32px;">
+    <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+      <thead>
+        <tr style="border-bottom: 2px solid #e5e7eb;">
+          <th style="text-align: left; padding: 8px 12px; color: #6b7280; font-weight: 600;">요소</th>
+          <th style="text-align: left; padding: 8px 12px; color: #6b7280; font-weight: 600;">값</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom: 1px solid #f3f4f6;">
+          <td style="padding: 8px 12px; font-weight: 500;">Accent Color</td>
+          <td style="padding: 8px 12px;"><span style="display: inline-block; width: 16px; height: 16px; background: #6366f1; border-radius: 4px; vertical-align: middle;"></span> #6366f1 (Indigo)</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f3f4f6;">
+          <td style="padding: 8px 12px; font-weight: 500;">사이드바 너비</td>
+          <td style="padding: 8px 12px;">256px (접힘: 64px)</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f3f4f6;">
+          <td style="padding: 8px 12px; font-weight: 500;">사이드바 배경</td>
+          <td style="padding: 8px 12px;">Light: #f9fafb / Dark: gray-900</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f3f4f6;">
+          <td style="padding: 8px 12px; font-weight: 500;">카테고리 색상</td>
+          <td style="padding: 8px 12px;">
+            <span style="display: inline-block; width: 12px; height: 12px; background: #6366f1; border-radius: 50%; vertical-align: middle;"></span>
+            <span style="display: inline-block; width: 12px; height: 12px; background: #f59e0b; border-radius: 50%; vertical-align: middle; margin-left: 4px;"></span>
+            <span style="display: inline-block; width: 12px; height: 12px; background: #10b981; border-radius: 50%; vertical-align: middle; margin-left: 4px;"></span>
+            <span style="display: inline-block; width: 12px; height: 12px; background: #ef4444; border-radius: 50%; vertical-align: middle; margin-left: 4px;"></span>
+            <span style="display: inline-block; width: 12px; height: 12px; background: #8b5cf6; border-radius: 50%; vertical-align: middle; margin-left: 4px;"></span>
+            Palette.CategoryColors 순환
+          </td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f3f4f6;">
+          <td style="padding: 8px 12px; font-weight: 500;">텍스트 크기</td>
+          <td style="padding: 8px 12px;">제목: 24px / 본문: 14px / 사이드바: 13px / 메타: 11px</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f3f4f6;">
+          <td style="padding: 8px 12px; font-weight: 500;">채팅 버블</td>
+          <td style="padding: 8px 12px;">User: Accent bg + white text / AI: gray-100 bg + dark text</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f3f4f6;">
+          <td style="padding: 8px 12px; font-weight: 500;">모바일 breakpoint</td>
+          <td style="padding: 8px 12px;">forceMobile prop (lg 이하에서 활성화)</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f3f4f6;">
+          <td style="padding: 8px 12px; font-weight: 500;">채팅 목록 정렬</td>
+          <td style="padding: 8px 12px;"><strong style="color: #10b981;">최신순</strong> (변경됨)</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f3f4f6;">
+          <td style="padding: 8px 12px; font-weight: 500;">채팅 구조</td>
+          <td style="padding: 8px 12px;"><strong style="color: #10b981;">플랫 리스트</strong> (카테고리 분리, 변경됨)</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f3f4f6;">
+          <td style="padding: 8px 12px; font-weight: 500;">모델 선택기 위치</td>
+          <td style="padding: 8px 12px;"><strong style="color: #004085;">입력 영역 위</strong> (드롭다운 형태)</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f3f4f6;">
+          <td style="padding: 8px 12px; font-weight: 500;">도메인 특화 모델</td>
+          <td style="padding: 8px 12px;">
+            💻 개발
+            &nbsp;&nbsp;📚 학습
+            &nbsp;&nbsp;💪 운동
+            &nbsp;&nbsp;✍️ 글쓰기
+            &nbsp;&nbsp;☀️ 일상
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 12px; font-weight: 500;">모델 기본값</td>
+          <td style="padding: 8px 12px;">새 채팅 생성 시 '개발' 모델 기본 선택</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div style="margin-top: 60px; padding: 20px; color: #9ca3af; font-size: 12px; text-align: center; border-top: 1px solid #e5e7eb;">
+  Note App UI Mockup · Generated 2026-03-24
+</div>
+
+</body>
+</html>
