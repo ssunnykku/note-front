@@ -61,31 +61,103 @@
 
 /* 코드 블록 */
 .tiptap pre {
-  background: #f3f4f6;
+  background: #f8f9fa;
   border-radius: 0.5rem;
   color: #1f2937;
-  font-family: 'JetBrains Mono', monospace;
-  padding: 0.75rem 1rem;
-  margin: 0.5em 0;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 0.925rem;
+  line-height: 1.7;
+  padding: 1rem 1.25rem;
+  margin: 0.75em 0;
+  overflow-x: auto;
 }
 
 .dark .tiptap pre {
-  background: #1f2937;
-  color: #f3f4f6;
+  background: #1e2030;
+  color: #e4e6eb;
 }
 
+.tiptap pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  font-size: inherit;
+  color: inherit;
+}
+
+/* 인라인 코드 */
 .tiptap code {
   background: #f3f4f6;
   border-radius: 0.25rem;
-  color: #1f2937;
+  color: #e11d48;
   font-size: 0.9em;
   padding: 0.2em 0.4em;
 }
 
 .dark .tiptap code {
   background: #1f2937;
-  color: #f3f4f6;
+  color: #fb7185;
 }
+
+/* ===== Syntax Highlighting (Light) ===== */
+.tiptap pre .hljs-comment,
+.tiptap pre .hljs-quote { color: #6b7280; font-style: italic; }
+
+.tiptap pre .hljs-keyword,
+.tiptap pre .hljs-selector-tag,
+.tiptap pre .hljs-built_in { color: #7c3aed; }
+
+.tiptap pre .hljs-string,
+.tiptap pre .hljs-attr,
+.tiptap pre .hljs-template-tag { color: #059669; }
+
+.tiptap pre .hljs-number,
+.tiptap pre .hljs-literal { color: #d97706; }
+
+.tiptap pre .hljs-function .hljs-title,
+.tiptap pre .hljs-title.function_ { color: #2563eb; }
+
+.tiptap pre .hljs-type,
+.tiptap pre .hljs-title.class_ { color: #0891b2; }
+
+.tiptap pre .hljs-variable,
+.tiptap pre .hljs-template-variable { color: #dc2626; }
+
+.tiptap pre .hljs-meta { color: #9ca3af; }
+
+.tiptap pre .hljs-tag { color: #6b7280; }
+.tiptap pre .hljs-name { color: #dc2626; }
+.tiptap pre .hljs-attr { color: #d97706; }
+
+/* ===== Syntax Highlighting (Dark) ===== */
+.dark .tiptap pre .hljs-comment,
+.dark .tiptap pre .hljs-quote { color: #6b7280; font-style: italic; }
+
+.dark .tiptap pre .hljs-keyword,
+.dark .tiptap pre .hljs-selector-tag,
+.dark .tiptap pre .hljs-built_in { color: #c084fc; }
+
+.dark .tiptap pre .hljs-string,
+.dark .tiptap pre .hljs-attr,
+.dark .tiptap pre .hljs-template-tag { color: #34d399; }
+
+.dark .tiptap pre .hljs-number,
+.dark .tiptap pre .hljs-literal { color: #fbbf24; }
+
+.dark .tiptap pre .hljs-function .hljs-title,
+.dark .tiptap pre .hljs-title.function_ { color: #60a5fa; }
+
+.dark .tiptap pre .hljs-type,
+.dark .tiptap pre .hljs-title.class_ { color: #22d3ee; }
+
+.dark .tiptap pre .hljs-variable,
+.dark .tiptap pre .hljs-template-variable { color: #f87171; }
+
+.dark .tiptap pre .hljs-meta { color: #6b7280; }
+
+.dark .tiptap pre .hljs-tag { color: #9ca3af; }
+.dark .tiptap pre .hljs-name { color: #f87171; }
+.dark .tiptap pre .hljs-attr { color: #fbbf24; }
 
 /* 인용문 */
 .tiptap blockquote {

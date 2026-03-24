@@ -1,8 +1,12 @@
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
+import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
+import { common, createLowlight } from 'lowlight';
 import { useEffect } from 'react';
 import './tiptap.css';
+
+const lowlight = createLowlight(common);
 
 interface TipTapEditorProps {
   content: string;
@@ -43,6 +47,11 @@ const TipTapEditor = ({ content, onChange, placeholder }: TipTapEditorProps) => 
         heading: {
           levels: [1, 2, 3],
         },
+        codeBlock: false,
+      }),
+      CodeBlockLowlight.configure({
+        lowlight,
+        defaultLanguage: 'plaintext',
       }),
       Placeholder.configure({
         placeholder: placeholder || "입력하세요. '/' 로 명령어를 사용할 수 있습니다.",
