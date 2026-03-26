@@ -1,24 +1,35 @@
 import { useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
+import { authApi } from '~/lib/api/auth';
 
 export function meta() {
   return [{ title: '회원가입 - Note' }, { name: 'description', content: '회원가입' }];
 }
 
 export default function Signup() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [nickname, setNickname] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
+  const [error, setError] = useState('');
 
   const passwordMismatch = passwordConfirm.length > 0 && password !== passwordConfirm;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (passwordMismatch) return;
-    console.log('회원가입 시도:', { email, password, nickname });
+    setError('');
+    try {
+      const res = await authApi.signup({ email, password, name: nickname });
+      localStorage.setItem('accessToken', res.accessToken);
+      localStorage.setItem('userId', res.user.id);
+      navigate('/');
+    } catch {
+      setError('회원가입에 실패했습니다. 다시 시도해주세요.');
+    }
   };
 
   return (
@@ -178,6 +189,10 @@ export default function Signup() {
               <p className="mt-1.5 text-xs text-red-500">비밀번호가 일치하지 않습니다</p>
             )}
           </div>
+
+          {error && (
+            <p className="text-sm text-red-500">{error}</p>
+          )}
 
           <button
             type="submit"
