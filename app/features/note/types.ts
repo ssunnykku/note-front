@@ -1,6 +1,7 @@
 export interface CategoryNoteItem {
   id: number;
   userId: string;
+  categoryId?: number;
   title: string;
   createdAt: string;
   updatedAt: string;
@@ -17,6 +18,7 @@ export interface Category {
 export interface Note {
   id: number;
   userId: string;
+  categoryId?: number;
   title: string;
   content: string;
   createdAt: string;

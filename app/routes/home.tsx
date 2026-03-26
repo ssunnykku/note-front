@@ -10,36 +10,6 @@ import { notesApi } from '~/lib/api/notes';
 import Palette from '~/lib/palette';
 import type { Note, Category, CategoryNoteItem, ChatRoom } from '~/features/note/types';
 
-// 더미 휴지통 데이터
-const DUMMY_TRASH_NOTES: CategoryNoteItem[] = [
-  {
-    id: -9001,
-    userId: '550e8400-e29b-41d4-a716-446655440000',
-    title: '프로젝트 회의 메모',
-    createdAt: '2026-03-10T09:00:00.000Z',
-    updatedAt: '2026-03-15T14:30:00.000Z',
-    deletedAt: '2026-03-18T10:22:00.000Z',
-    contentPreview: 'Q1 목표 정리, 디자인 시스템 마이그레이션 일정 논의...',
-  },
-  {
-    id: -9002,
-    userId: '550e8400-e29b-41d4-a716-446655440000',
-    title: 'API 엔드포인트 정리',
-    createdAt: '2026-03-05T11:00:00.000Z',
-    updatedAt: '2026-03-12T16:45:00.000Z',
-    deletedAt: '2026-03-17T08:15:00.000Z',
-    contentPreview: 'GET /notes, POST /notes, PATCH /notes/:id, DELETE /notes/:id...',
-  },
-  {
-    id: -9003,
-    userId: '550e8400-e29b-41d4-a716-446655440000',
-    title: '읽을 책 목록',
-    createdAt: '2026-02-20T08:00:00.000Z',
-    updatedAt: '2026-03-01T12:00:00.000Z',
-    deletedAt: '2026-03-16T19:30:00.000Z',
-    contentPreview: '1. Clean Architecture 2. 도메인 주도 설계 3. 리팩터링...',
-  },
-];
 
 interface LayoutContext {
   isMobile: boolean;
@@ -62,7 +32,7 @@ export default function Home() {
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [mobileView, setMobileView] = useState<'list' | 'editor' | 'chat'>('list');
   const [pendingNoteIds, setPendingNoteIds] = useState<Set<number>>(new Set());
-  const [trashNotes, setTrashNotes] = useState<CategoryNoteItem[]>(DUMMY_TRASH_NOTES);
+  const [trashNotes, setTrashNotes] = useState<CategoryNoteItem[]>([]);
   const [isTrashView, setIsTrashView] = useState(false);
   const [selectedTrashNoteId, setSelectedTrashNoteId] = useState<number | null>(null);
   const [selectedTrashNote, setSelectedTrashNote] = useState<Note | null>(null);
@@ -83,7 +53,33 @@ export default function Home() {
         console.error('카테고리 로딩 실패:', err);
       });
 
-    notesApi.getTrash().then(setTrashNotes).catch(() => {});
+    // 미분류 노트 조회 (categoryId = null)
+    categoriesApi
+      .getNotesUncategorized(userId)
+      .then((notes) => {
+        setUncategorizedNotes(
+          notes.map((n) => ({
+            id: n.id,
+            userId: n.userId,
+            categoryId: n.categoryId,
+            title: n.title,
+            createdAt: n.createdAt,
+            updatedAt: n.updatedAt,
+          })),
+        );
+      })
+      .catch(() => {});
+
+    // 휴지통 노트 조회 (카테고리별 삭제 노트 → categoryId 보존)
+    categoriesApi
+      .getAll(userId, true)
+      .then((data) => {
+        const trashItems = data.flatMap((cat) =>
+          cat.notes.map((note) => ({ ...note, categoryId: cat.id })),
+        );
+        setTrashNotes(trashItems);
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -96,14 +92,20 @@ export default function Home() {
       .catch(() => setSelectedNote(null));
   }, [selectedId, pendingNoteIds]);
 
-  // 휴지통 노트 선택 시 상세 조회
+  // 휴지통 노트 선택 시 상세 조회 (삭제된 노트는 GET /notes/{id}에서 404이므로 카테고리 API 사용)
   useEffect(() => {
     if (selectedTrashNoteId === null) return;
-    notesApi
-      .getById(selectedTrashNoteId)
-      .then(setSelectedTrashNote)
+    const trashNote = trashNotes.find((n) => n.id === selectedTrashNoteId);
+    if (!trashNote?.categoryId) return;
+    const userId = localStorage.getItem('userId') || '550e8400-e29b-41d4-a716-446655440000';
+    categoriesApi
+      .getNotesByCategory(userId, trashNote.categoryId, true)
+      .then((notes) => {
+        const found = notes.find((n) => n.id === selectedTrashNoteId);
+        setSelectedTrashNote(found ?? null);
+      })
       .catch(() => setSelectedTrashNote(null));
-  }, [selectedTrashNoteId]);
+  }, [selectedTrashNoteId, trashNotes]);
 
   const selectedChat = chatRooms.find((c) => c.id === selectedChatId) ?? null;
 
@@ -113,8 +115,7 @@ export default function Home() {
 
       if (pendingNoteIds.has(noteId)) {
         // 아직 서버에 생성되지 않은 노트 → create API 호출
-        const userId =
-          localStorage.getItem('userId') || '550e8400-e29b-41d4-a716-446655440000';
+        const userId = localStorage.getItem('userId') || '550e8400-e29b-41d4-a716-446655440000';
         const created = await notesApi.create({
           userId,
           title,
@@ -146,12 +147,14 @@ export default function Home() {
           setUncategorizedNotes((prev) => prev.map(updateNote));
         }
         setSelectedId(created.id);
-        setSelectedNote((prev) =>
-          prev && prev.id === noteId ? { ...created } : prev,
-        );
+        setSelectedNote((prev) => (prev && prev.id === noteId ? { ...created } : prev));
       } else {
         // 기존 노트 → update API 호출
-        const updated = await notesApi.update(noteId, { title, content, categoryId });
+        const updated = await notesApi.update(noteId, {
+          title,
+          content,
+          categoryId,
+        });
 
         const updateNote = (note: CategoryNoteItem) =>
           note.id === noteId
@@ -270,7 +273,10 @@ export default function Home() {
       });
 
       if (deletedNote) {
-        setTrashNotes((prev) => [{ ...deletedNote!, deletedAt: new Date().toISOString() }, ...prev]);
+        setTrashNotes((prev) => [
+          { ...deletedNote!, deletedAt: new Date().toISOString() },
+          ...prev,
+        ]);
       }
 
       if (selectedId === noteId) {
@@ -283,57 +289,35 @@ export default function Home() {
   };
 
   const handleRestoreNote = async (noteId: number) => {
-    // 더미 데이터 (음수 id)는 로컬에서만 처리
-    if (noteId < 0) {
+    try {
+      await notesApi.restore(noteId);
       const trashNote = trashNotes.find((n) => n.id === noteId);
       setTrashNotes((prev) => prev.filter((n) => n.id !== noteId));
       if (selectedTrashNoteId === noteId) {
         setSelectedTrashNoteId(null);
         setSelectedTrashNote(null);
       }
+
       if (trashNote) {
-        setUncategorizedNotes((prev) => [
-          { ...trashNote, deletedAt: undefined },
-          ...prev,
-        ]);
+        const restoredNote = { ...trashNote, deletedAt: undefined };
+        if (trashNote.categoryId) {
+          setCategories((prev) =>
+            prev.map((cat) =>
+              cat.id === trashNote.categoryId
+                ? { ...cat, notes: [restoredNote, ...cat.notes] }
+                : cat
+            )
+          );
+        } else {
+          setUncategorizedNotes((prev) => [restoredNote, ...prev]);
+        }
       }
-      return;
-    }
-
-    try {
-      const restored = await notesApi.restore(noteId);
-      setTrashNotes((prev) => prev.filter((n) => n.id !== noteId));
-      if (selectedTrashNoteId === noteId) {
-        setSelectedTrashNoteId(null);
-        setSelectedTrashNote(null);
-      }
-
-      setUncategorizedNotes((prev) => [
-        {
-          id: restored.id,
-          userId: restored.userId,
-          title: restored.title,
-          createdAt: restored.createdAt,
-          updatedAt: restored.updatedAt,
-        },
-        ...prev,
-      ]);
     } catch (err) {
       console.error('노트 복원 실패:', err);
     }
   };
 
   const handlePermanentDelete = async (noteId: number) => {
-    // 더미 데이터 (음수 id)는 로컬에서만 처리
-    if (noteId < 0) {
-      setTrashNotes((prev) => prev.filter((n) => n.id !== noteId));
-      if (selectedTrashNoteId === noteId) {
-        setSelectedTrashNoteId(null);
-        setSelectedTrashNote(null);
-      }
-      return;
-    }
-
     try {
       await notesApi.permanentDelete(noteId);
       setTrashNotes((prev) => prev.filter((n) => n.id !== noteId));
@@ -375,7 +359,7 @@ export default function Home() {
 
   const handleRenameCategory = async (categoryId: number, name: string) => {
     try {
-      await categoriesApi.update(String(categoryId), { name });
+      await categoriesApi.update(categoryId, { name });
       setCategories((prev) =>
         prev.map((cat) => (cat.id === categoryId ? { ...cat, categoryName: name } : cat)),
       );
@@ -389,7 +373,7 @@ export default function Home() {
     if (!category) return;
 
     try {
-      await categoriesApi.delete(String(categoryId));
+      await categoriesApi.delete(categoryId);
 
       // 카테고리 내 노트들을 미분류로 이동
       if (category.notes.length > 0) {
@@ -430,7 +414,13 @@ export default function Home() {
     }
 
     try {
-      await notesApi.update(noteId, { categoryId });
+      // 노트 상세 정보를 먼저 가져와서 필수 필드 포함
+      const noteDetail = await notesApi.getById(noteId);
+      await notesApi.update(noteId, {
+        title: noteDetail.title,
+        content: noteDetail.content,
+        categoryId,
+      });
 
       let movedNote: CategoryNoteItem | undefined;
 
@@ -493,9 +483,7 @@ export default function Home() {
   };
 
   const handleModelChange = (chatId: string, modelId: string) => {
-    setChatRooms((prev) =>
-      prev.map((chat) => (chat.id === chatId ? { ...chat, modelId } : chat)),
-    );
+    setChatRooms((prev) => prev.map((chat) => (chat.id === chatId ? { ...chat, modelId } : chat)));
   };
 
   const handleSelectNote = (id: number) => {
@@ -644,10 +632,7 @@ export default function Home() {
   // 모바일 사이드바 오버레이 (에디터/채팅 뷰에서 햄버거로 열 때)
   const mobileSidebarOverlay = isMobile && sidebarOpen && mobileView !== 'list' && (
     <>
-      <div
-        className="fixed inset-0 z-40 bg-black/50"
-        onClick={() => setSidebarOpen(false)}
-      />
+      <div className="fixed inset-0 z-40 bg-black/50" onClick={() => setSidebarOpen(false)} />
       <aside className="fixed inset-y-0 left-0 z-50 w-72 bg-gray-50 dark:bg-gray-900 shadow-xl pt-14">
         <Sidebar {...sidebarProps} forceMobile />
       </aside>
