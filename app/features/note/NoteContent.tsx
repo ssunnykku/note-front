@@ -5,7 +5,7 @@ import type { Note } from './types';
 
 interface NoteContentProps {
   note: Note | null;
-  onSave?: (noteId: number, title: string, content: string) => void;
+  onSave?: (noteId: number, title: string, content: string) => Promise<string | void>;
   onDelete?: (noteId: number) => void;
   onBack?: () => void;
   isPending?: boolean;
@@ -85,10 +85,10 @@ const NoteContent = ({
       return;
     }
 
-    // 신규 노트: 초기값에서 변경이 없으면 저장하지 않음
+    // 초기값에서 변경이 없으면 저장하지 않음
     const titleChanged = title !== initialTitleRef.current;
     const contentChanged = content !== initialContentRef.current;
-    if (isPending && !titleChanged && !contentChanged) return;
+    if (!titleChanged && !contentChanged) return;
 
     if (!hasEdited) setHasEdited(true);
 
@@ -101,8 +101,8 @@ const NoteContent = ({
     debounceTimerRef.current = setTimeout(async () => {
       setIsSaving(true);
       try {
-        await currentOnSave(currentNote.id, title, content);
-        setLastSaved(new Date());
+        const serverUpdatedAt = await currentOnSave(currentNote.id, title, content);
+        setLastSaved(serverUpdatedAt ? new Date(serverUpdatedAt) : new Date());
       } catch (err) {
         console.error('자동 저장 실패:', err);
       } finally {

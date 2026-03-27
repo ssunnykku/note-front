@@ -109,7 +109,11 @@ export default function Home() {
 
   const selectedChat = chatRooms.find((c) => c.id === selectedChatId) ?? null;
 
-  const handleSaveNote = async (noteId: number, title: string, content: string) => {
+  const handleSaveNote = async (
+    noteId: number,
+    title: string,
+    content: string,
+  ): Promise<string | void> => {
     try {
       const categoryId = categories.find((cat) => cat.notes.some((n) => n.id === noteId))?.id;
 
@@ -148,6 +152,7 @@ export default function Home() {
         }
         setSelectedId(created.id);
         setSelectedNote((prev) => (prev && prev.id === noteId ? { ...created } : prev));
+        return created.updatedAt;
       } else {
         // 기존 노트 → update API 호출
         const updated = await notesApi.update(noteId, {
@@ -173,6 +178,7 @@ export default function Home() {
             ? { ...prev, title: updated.title, updatedAt: updated.updatedAt }
             : prev,
         );
+        return updated.updatedAt;
       }
     } catch (err) {
       console.error('노트 저장 실패:', err);
