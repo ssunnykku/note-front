@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router';
 import Sidebar from '~/features/note/Sidebar';
 import NoteContent from '~/features/note/NoteContent';
-import TrashNoteContent from '~/features/note/TrashNoteContent';
 import TrashListView from '~/features/note/TrashListView';
 import AiChatPanel from '~/features/ai/AiChatPanel';
 import { categoriesApi } from '~/lib/api/categories';
@@ -34,8 +33,6 @@ export default function Home() {
   const [pendingNoteIds, setPendingNoteIds] = useState<Set<number>>(new Set());
   const [trashNotes, setTrashNotes] = useState<CategoryNoteItem[]>([]);
   const [isTrashView, setIsTrashView] = useState(false);
-  const [selectedTrashNoteId, setSelectedTrashNoteId] = useState<number | null>(null);
-  const [selectedTrashNote, setSelectedTrashNote] = useState<Note | null>(null);
 
   useEffect(() => {
     const userId = localStorage.getItem('userId') || '550e8400-e29b-41d4-a716-446655440000';
@@ -91,21 +88,6 @@ export default function Home() {
       .then(setSelectedNote)
       .catch(() => setSelectedNote(null));
   }, [selectedId, pendingNoteIds]);
-
-  // 휴지통 노트 선택 시 상세 조회 (삭제된 노트는 GET /notes/{id}에서 404이므로 카테고리 API 사용)
-  useEffect(() => {
-    if (selectedTrashNoteId === null) return;
-    const trashNote = trashNotes.find((n) => n.id === selectedTrashNoteId);
-    if (!trashNote?.categoryId) return;
-    const userId = localStorage.getItem('userId') || '550e8400-e29b-41d4-a716-446655440000';
-    categoriesApi
-      .getNotesByCategory(userId, trashNote.categoryId, true)
-      .then((notes) => {
-        const found = notes.find((n) => n.id === selectedTrashNoteId);
-        setSelectedTrashNote(found ?? null);
-      })
-      .catch(() => setSelectedTrashNote(null));
-  }, [selectedTrashNoteId, trashNotes]);
 
   const selectedChat = chatRooms.find((c) => c.id === selectedChatId) ?? null;
 
@@ -203,7 +185,7 @@ export default function Home() {
       ),
     );
     setSelectedId(tempId);
-    setSelectedTrashNoteId(null);
+    setIsTrashView(false);
     setSelectedNote({
       id: tempId,
       userId,
@@ -229,7 +211,7 @@ export default function Home() {
     setPendingNoteIds((prev) => new Set(prev).add(tempId));
     setUncategorizedNotes((prev) => [noteItem, ...prev]);
     setSelectedId(tempId);
-    setSelectedTrashNoteId(null);
+    setIsTrashView(false);
     setSelectedNote({
       id: tempId,
       userId,
@@ -299,10 +281,6 @@ export default function Home() {
       await notesApi.restore(noteId);
       const trashNote = trashNotes.find((n) => n.id === noteId);
       setTrashNotes((prev) => prev.filter((n) => n.id !== noteId));
-      if (selectedTrashNoteId === noteId) {
-        setSelectedTrashNoteId(null);
-        setSelectedTrashNote(null);
-      }
 
       if (trashNote) {
         const restoredNote = { ...trashNote, deletedAt: undefined };
@@ -327,10 +305,6 @@ export default function Home() {
     try {
       await notesApi.permanentDelete(noteId);
       setTrashNotes((prev) => prev.filter((n) => n.id !== noteId));
-      if (selectedTrashNoteId === noteId) {
-        setSelectedTrashNoteId(null);
-        setSelectedTrashNote(null);
-      }
     } catch (err) {
       console.error('영구 삭제 실패:', err);
     }
@@ -338,8 +312,6 @@ export default function Home() {
 
   const handleOpenTrash = () => {
     setIsTrashView(true);
-    setSelectedTrashNoteId(null);
-    setSelectedTrashNote(null);
     setSelectedId(null);
     setSelectedNote(null);
     setIsChatOpen(false);
@@ -348,10 +320,6 @@ export default function Home() {
       setMobileView('editor');
       setSidebarOpen(false);
     }
-  };
-
-  const handleSelectTrashNote = (noteId: number) => {
-    setSelectedTrashNoteId(noteId);
   };
 
   const handleAddCategory = async (name: string) => {
@@ -511,8 +479,6 @@ export default function Home() {
     }
     setSelectedId(id);
     setIsTrashView(false);
-    setSelectedTrashNoteId(null);
-    setSelectedTrashNote(null);
     setIsChatOpen(false);
     setSelectedChatId(null);
     if (isMobile) {
@@ -536,24 +502,9 @@ export default function Home() {
   // 현재 보여줄 메인 컨텐츠 결정
   const renderMainContent = (onBack?: () => void) => {
     if (isTrashView) {
-      if (selectedTrashNoteId !== null) {
-        return (
-          <TrashNoteContent
-            note={selectedTrashNote}
-            onRestore={handleRestoreNote}
-            onPermanentDelete={handlePermanentDelete}
-            onBack={() => {
-              setSelectedTrashNoteId(null);
-              setSelectedTrashNote(null);
-            }}
-          />
-        );
-      }
       return (
         <TrashListView
           trashNotes={trashNotes}
-          selectedId={selectedTrashNoteId}
-          onSelect={handleSelectTrashNote}
           onRestore={handleRestoreNote}
           onPermanentDelete={handlePermanentDelete}
           onBack={onBack}

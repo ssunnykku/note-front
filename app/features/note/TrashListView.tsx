@@ -4,17 +4,17 @@ import Button from '~/components/ui/Button';
 
 interface TrashListViewProps {
   trashNotes: CategoryNoteItem[];
-  selectedId: number | null;
-  onSelect: (noteId: number) => void;
   onRestore: (noteId: number) => void;
   onPermanentDelete: (noteId: number) => void;
   onBack?: () => void;
 }
 
+const stripHtml = (html: string) => {
+  return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+};
+
 const TrashListView = ({
   trashNotes,
-  selectedId,
-  onSelect,
   onRestore,
   onPermanentDelete,
   onBack,
@@ -86,41 +86,34 @@ const TrashListView = ({
         {trashNotes.map((note) => (
           <div
             key={note.id}
-            onClick={() => onSelect(note.id)}
-            className={`px-4 py-4 lg:px-6 border-b border-gray-100 dark:border-gray-800 cursor-pointer transition-colors ${
-              selectedId === note.id
-                ? 'bg-blue-50 dark:bg-blue-900/20'
-                : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
-            }`}
+            className="px-4 py-4 lg:px-6 border-b border-gray-100 dark:border-gray-800"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
                   {note.title}
                 </h3>
+                {note.contentPreview && (
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 line-clamp-3">
+                    {stripHtml(note.contentPreview)}
+                  </p>
+                )}
                 <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
                   삭제일: {note.deletedAt ? formatDateTime(note.deletedAt) : '-'}
-                  {note.contentPreview && ` · ${note.contentPreview}`}
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <Button
                   variant="default"
                   size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onRestore(note.id);
-                  }}
+                  onClick={() => onRestore(note.id)}
                 >
                   복원
                 </Button>
                 <Button
                   variant="danger"
                   size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onPermanentDelete(note.id);
-                  }}
+                  onClick={() => onPermanentDelete(note.id)}
                 >
                   영구 삭제
                 </Button>
