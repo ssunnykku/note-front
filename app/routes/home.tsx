@@ -35,10 +35,8 @@ export default function Home() {
   const [isTrashView, setIsTrashView] = useState(false);
 
   useEffect(() => {
-    const userId = localStorage.getItem('userId') || '550e8400-e29b-41d4-a716-446655440000';
-
     categoriesApi
-      .getAll(userId)
+      .getAll()
       .then((data) => {
         setCategories(data);
         const allNotes = data.flatMap((cat) => cat.notes);
@@ -52,12 +50,11 @@ export default function Home() {
 
     // 미분류 노트 조회 (categoryId = null)
     categoriesApi
-      .getNotesUncategorized(userId)
+      .getNotesUncategorized()
       .then((notes) => {
         setUncategorizedNotes(
           notes.map((n) => ({
             id: n.id,
-            userId: n.userId,
             categoryId: n.categoryId,
             title: n.title,
             createdAt: n.createdAt,
@@ -69,7 +66,7 @@ export default function Home() {
 
     // 휴지통 노트 조회 (카테고리별 삭제 노트 → categoryId 보존)
     categoriesApi
-      .getAll(userId, true)
+      .getAll(true)
       .then((data) => {
         const trashItems = data.flatMap((cat) =>
           cat.notes.map((note) => ({ ...note, categoryId: cat.id })),
@@ -101,9 +98,7 @@ export default function Home() {
 
       if (pendingNoteIds.has(noteId)) {
         // 아직 서버에 생성되지 않은 노트 → create API 호출
-        const userId = localStorage.getItem('userId') || '550e8400-e29b-41d4-a716-446655440000';
         const created = await notesApi.create({
-          userId,
           title,
           content,
           categoryId: categoryId,
@@ -168,12 +163,10 @@ export default function Home() {
   };
 
   const handleAddNote = (categoryId: number) => {
-    const userId = localStorage.getItem('userId') || '550e8400-e29b-41d4-a716-446655440000';
     const tempId = -Date.now();
     const now = new Date().toISOString();
     const noteItem = {
       id: tempId,
-      userId,
       title: '새 노트',
       createdAt: now,
       updatedAt: now,
@@ -188,7 +181,6 @@ export default function Home() {
     setIsTrashView(false);
     setSelectedNote({
       id: tempId,
-      userId,
       title: '새 노트',
       content: '',
       createdAt: now,
@@ -198,12 +190,10 @@ export default function Home() {
   };
 
   const handleQuickMemo = () => {
-    const userId = localStorage.getItem('userId') || '550e8400-e29b-41d4-a716-446655440000';
     const tempId = -Date.now();
     const now = new Date().toISOString();
     const noteItem: CategoryNoteItem = {
       id: tempId,
-      userId,
       title: '새 노트',
       createdAt: now,
       updatedAt: now,
@@ -214,7 +204,6 @@ export default function Home() {
     setIsTrashView(false);
     setSelectedNote({
       id: tempId,
-      userId,
       title: '새 노트',
       content: '',
       createdAt: now,

@@ -19,7 +19,6 @@ export default function Login() {
     try {
       const res = await authApi.login({ email, password });
       localStorage.setItem('accessToken', res.accessToken);
-      localStorage.setItem('userId', res.user.id);
       navigate('/');
     } catch {
       setError('이메일 또는 비밀번호가 올바르지 않습니다.');

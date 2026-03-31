@@ -15,20 +15,18 @@ interface CreateCategoryResponse {
 }
 
 export const categoriesApi = {
-  getAll: (userId: string, deleted: boolean = false) =>
-    apiClient
-      .get<Category[]>(`/categories/${userId}/notes`, { params: { deleted } })
-      .then((r) => r.data),
+  getAll: (deleted: boolean = false) =>
+    apiClient.get<Category[]>('/categories/notes', { params: { deleted } }).then((r) => r.data),
 
-  getNotesByCategory: (userId: string, categoryId: number | null, deleted: boolean = false) => {
+  getNotesByCategory: (categoryId: number | null, deleted: boolean = false) => {
     const params: Record<string, string> = { deleted: String(deleted) };
-    params.categoryId = categoryId === null ? '' : String(categoryId);
-    return apiClient.get<Note[]>(`/categories/${userId}`, { params }).then((r) => r.data);
+    if (categoryId !== null) params.categoryId = String(categoryId);
+    return apiClient.get<Note[]>('/categories', { params }).then((r) => r.data);
   },
 
-  getNotesUncategorized: (userId: string, deleted: boolean = false) => {
+  getNotesUncategorized: (deleted: boolean = false) => {
     const params: Record<string, string> = { deleted: String(deleted) };
-    return apiClient.get<Note[]>(`/categories/${userId}`, { params }).then((r) => r.data);
+    return apiClient.get<Note[]>('/categories', { params }).then((r) => r.data);
   },
 
   create: (data: CreateCategoryRequest) =>

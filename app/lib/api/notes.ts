@@ -2,7 +2,6 @@ import type { Note } from '~/features/note/types';
 import apiClient from '~/lib/apiClient';
 
 interface CreateNoteRequest {
-  userId: string;
   title: string;
   content: string;
   categoryId?: number;

@@ -85,7 +85,12 @@
   color: inherit;
 }
 
-/* 인라인 코드 */
+/* 인라인 코드 — prose가 추가하는 백틱 제거 */
+.tiptap code::before,
+.tiptap code::after {
+  content: none;
+}
+
 .tiptap code {
   background: #f3f4f6;
   border-radius: 0.25rem;

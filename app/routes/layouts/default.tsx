@@ -1,12 +1,20 @@
-import { Outlet } from 'react-router';
-import { useState } from 'react';
+import { Outlet, useNavigate } from 'react-router';
+import { useEffect, useState } from 'react';
 import Header from '~/components/ui/Header';
 import useBreakpoint from '~/hooks/useBreakpoint';
 
 const DefaultLayout = () => {
+  const navigate = useNavigate();
   const breakpoint = useBreakpoint();
   const isMobile = breakpoint === 'mobile';
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      navigate('/login', { replace: true });
+    }
+  }, [navigate]);
 
   return (
     <div className="flex h-screen flex-col">

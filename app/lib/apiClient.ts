@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { clearAuth } from '~/lib/auth';
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
@@ -22,8 +23,7 @@ apiClient.interceptors.response.use(
     const url = error.config?.url;
 
     if (status === 401) {
-      localStorage.removeItem('accessToken');
-      window.location.href = '/login';
+      clearAuth();
     } else {
       console.error(`[API Error] ${status ?? 'NETWORK'} ${url}`, error.response?.data);
     }

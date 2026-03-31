@@ -1,4 +1,6 @@
-import { Link, useNavigate } from 'react-router';
+import { Link } from 'react-router';
+import { authApi } from '~/lib/api/auth';
+import { clearAuth } from '~/lib/auth';
 
 interface HeaderProps {
   onMenuToggle?: () => void;
@@ -6,11 +8,13 @@ interface HeaderProps {
 }
 
 const Header = ({ onMenuToggle, showMenuButton }: HeaderProps) => {
-  const navigate = useNavigate();
-
-  const handleLogout = () => {
-    console.log('로그아웃');
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await authApi.logout();
+    } catch {
+      // 서버 로그아웃 실패해도 클라이언트는 정리
+    }
+    clearAuth();
   };
 
   return (

@@ -6,17 +6,17 @@ interface LoginRequest {
 }
 
 interface SignupRequest {
+  name: string;
   email: string;
   password: string;
-  name: string;
+  passwordConfirm: string;
 }
 
 interface AuthResponse {
   accessToken: string;
   user: {
-    id: string;
-    email: string;
     name: string;
+    email: string;
   };
 }
 
