@@ -64,16 +64,6 @@ export default function Home() {
       })
       .catch(() => {});
 
-    // 휴지통 노트 조회 (카테고리별 삭제 노트 → categoryId 보존)
-    categoriesApi
-      .getAll(true)
-      .then((data) => {
-        const trashItems = data.flatMap((cat) =>
-          cat.notes.map((note) => ({ ...note, categoryId: cat.id })),
-        );
-        setTrashNotes(trashItems);
-      })
-      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -299,7 +289,7 @@ export default function Home() {
     }
   };
 
-  const handleOpenTrash = () => {
+  const handleOpenTrash = async () => {
     setIsTrashView(true);
     setSelectedId(null);
     setSelectedNote(null);
@@ -308,6 +298,16 @@ export default function Home() {
     if (isMobile) {
       setMobileView('editor');
       setSidebarOpen(false);
+    }
+
+    try {
+      const data = await categoriesApi.getAll(true);
+      const trashItems = data.flatMap((cat) =>
+        cat.notes.map((note) => ({ ...note, categoryId: cat.id })),
+      );
+      setTrashNotes(trashItems);
+    } catch (err) {
+      console.error('휴지통 로딩 실패:', err);
     }
   };
 
