@@ -6,6 +6,7 @@ import {
   Scripts,
   ScrollRestoration,
 } from 'react-router';
+import { useEffect } from 'react';
 
 import type { Route } from './+types/root';
 import NotFoundPage from '~/features/error/NotFoundPage';
@@ -48,6 +49,13 @@ export default function App() {
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  useEffect(() => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      window.location.href = '/login';
+    }
+  }, []);
+
   if (isRouteErrorResponse(error) && error.status === 404) {
     return <NotFoundPage />;
   }

@@ -16,17 +16,23 @@ interface CreateCategoryResponse {
 
 export const categoriesApi = {
   getAll: (deleted: boolean = false) =>
-    apiClient.get<Category[]>('/categories/notes', { params: { deleted } }).then((r) => r.data),
+    apiClient
+      .get<Category[]>('/categories/notes', { params: { deleted } })
+      .then((r) => Array.isArray(r.data) ? r.data : []),
 
   getNotesByCategory: (categoryId: number | null, deleted: boolean = false) => {
     const params: Record<string, string> = { deleted: String(deleted) };
     if (categoryId !== null) params.categoryId = String(categoryId);
-    return apiClient.get<Note[]>('/categories', { params }).then((r) => r.data);
+    return apiClient
+      .get<Note[]>('/categories', { params })
+      .then((r) => Array.isArray(r.data) ? r.data : []);
   },
 
   getNotesUncategorized: (deleted: boolean = false) => {
     const params: Record<string, string> = { deleted: String(deleted) };
-    return apiClient.get<Note[]>('/categories', { params }).then((r) => r.data);
+    return apiClient
+      .get<Note[]>('/categories', { params })
+      .then((r) => Array.isArray(r.data) ? r.data : []);
   },
 
   create: (data: CreateCategoryRequest) =>
