@@ -46,6 +46,14 @@ export default function App() {
   return <Outlet />;
 }
 
+export function HydrateFallback() {
+  return (
+    <div className="flex h-screen items-center justify-center">
+      <p className="text-gray-400">로딩 중...</p>
+    </div>
+  );
+}
+
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   if (isRouteErrorResponse(error) && error.status === 404) {
     return <NotFoundPage />;
