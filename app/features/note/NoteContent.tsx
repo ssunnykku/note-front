@@ -1,7 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useSyncExternalStore } from 'react';
 import type { ComponentType } from 'react';
 import { marked } from 'marked';
 import type { Note } from './types';
+
+const emptySubscribe = () => () => {};
+const useIsClient = () => useSyncExternalStore(emptySubscribe, () => true, () => false);
 
 interface NoteContentProps {
   note: Note | null;
@@ -29,6 +32,7 @@ const NoteContent = ({
   const [hasEdited, setHasEdited] = useState(false);
   const initialTitleRef = useRef('');
   const initialContentRef = useRef('');
+  const isClient = useIsClient();
   const [TipTapEditor, setTipTapEditor] = useState<ComponentType<{
     content: string;
     onChange: (content: string) => void;
@@ -54,9 +58,10 @@ const NoteContent = ({
 
     setTitle(note.title);
     // 마크다운을 HTML로 변환
-    const htmlContent = note.content.includes('<')
-      ? note.content
-      : (marked.parse(note.content) as string);
+    const rawContent = note.content ?? '';
+    const htmlContent = rawContent.includes('<')
+      ? rawContent
+      : (marked.parse(rawContent) as string);
     setContent(htmlContent);
     // 초기값 저장 (신규 노트 변경 감지용)
     initialTitleRef.current = note.title;
@@ -209,7 +214,7 @@ const NoteContent = ({
               </span>
             ) : (
               <span className="text-gray-400 dark:text-gray-500">
-                자동 저장됨 ({note.updatedAt ? new Date(note.updatedAt).toLocaleTimeString() : ''})
+                자동 저장됨 {isClient && note.updatedAt ? `(${new Date(note.updatedAt).toLocaleTimeString()})` : ''}
               </span>
             )}
           </div>

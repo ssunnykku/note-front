@@ -6,11 +6,13 @@ const apiClient = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// [AUTH] 토큰 인증 적용
+// [AUTH] 토큰 인증 적용 (클라이언트에서만 localStorage 접근)
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('accessToken');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
   }
   return config;
 });
