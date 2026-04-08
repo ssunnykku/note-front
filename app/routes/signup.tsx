@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { authApi } from '~/lib/api/auth';
 
@@ -15,6 +15,13 @@ export default function Signup() {
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      navigate('/', { replace: true });
+    }
+  }, [navigate]);
 
   const passwordMismatch = passwordConfirm.length > 0 && password !== passwordConfirm;
 

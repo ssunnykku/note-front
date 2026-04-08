@@ -8,13 +8,17 @@ const DefaultLayout = () => {
   const breakpoint = useBreakpoint();
   const isMobile = breakpoint === 'mobile';
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const isAuthenticated = typeof window !== 'undefined' && !!localStorage.getItem('accessToken');
 
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
+    if (!isAuthenticated) {
       navigate('/login', { replace: true });
     }
-  }, [navigate]);
+  }, [isAuthenticated, navigate]);
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className="flex h-screen flex-col">
