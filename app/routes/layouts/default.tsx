@@ -8,15 +8,18 @@ const DefaultLayout = () => {
   const breakpoint = useBreakpoint();
   const isMobile = breakpoint === 'mobile';
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const isAuthenticated = typeof window !== 'undefined' && !!localStorage.getItem('accessToken');
+  const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
       navigate('/login', { replace: true });
+    } else {
+      setAuthChecked(true);
     }
-  }, [isAuthenticated, navigate]);
+  }, [navigate]);
 
-  if (!isAuthenticated) {
+  if (!authChecked) {
     return null;
   }
 
