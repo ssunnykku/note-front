@@ -2,9 +2,11 @@ import { Outlet, useNavigate } from 'react-router';
 import { useEffect, useState } from 'react';
 import Header from '~/components/ui/Header';
 import useBreakpoint from '~/hooks/useBreakpoint';
+import useIsClient from '~/hooks/useIsClient';
 
 const DefaultLayout = () => {
   const navigate = useNavigate();
+  const isClient = useIsClient();
   const breakpoint = useBreakpoint();
   const isMobile = breakpoint === 'mobile';
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -19,7 +21,7 @@ const DefaultLayout = () => {
     }
   }, [navigate]);
 
-  if (!authChecked) {
+  if (!isClient || !authChecked) {
     return null;
   }
 

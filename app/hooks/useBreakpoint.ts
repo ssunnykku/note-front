@@ -1,33 +1,27 @@
-import { useState, useEffect } from 'react';
+import { useSyncExternalStore } from 'react';
 
 type Breakpoint = 'mobile' | 'tablet' | 'desktop';
 
+const getBreakpoint = (): Breakpoint => {
+  const width = window.innerWidth;
+  if (width < 768) return 'mobile';
+  if (width < 1024) return 'tablet';
+  return 'desktop';
+};
+
+const subscribe = (callback: () => void) => {
+  const mql = window.matchMedia('(max-width: 767px)');
+  const mqt = window.matchMedia('(min-width: 768px) and (max-width: 1023px)');
+  mql.addEventListener('change', callback);
+  mqt.addEventListener('change', callback);
+  return () => {
+    mql.removeEventListener('change', callback);
+    mqt.removeEventListener('change', callback);
+  };
+};
+
 const useBreakpoint = (): Breakpoint => {
-  const [breakpoint, setBreakpoint] = useState<Breakpoint>('desktop');
-
-  useEffect(() => {
-    const mqMobile = window.matchMedia('(max-width: 767px)');
-    const mqTablet = window.matchMedia('(min-width: 768px) and (max-width: 1023px)');
-
-    const update = () => {
-      if (mqMobile.matches) setBreakpoint('mobile');
-      else if (mqTablet.matches) setBreakpoint('tablet');
-      else setBreakpoint('desktop');
-    };
-
-    // 마운트 시 즉시 현재 breakpoint 반영
-    update();
-
-    mqMobile.addEventListener('change', update);
-    mqTablet.addEventListener('change', update);
-
-    return () => {
-      mqMobile.removeEventListener('change', update);
-      mqTablet.removeEventListener('change', update);
-    };
-  }, []);
-
-  return breakpoint;
+  return useSyncExternalStore(subscribe, getBreakpoint, () => 'desktop');
 };
 
 export default useBreakpoint;

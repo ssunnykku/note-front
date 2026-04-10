@@ -1,10 +1,8 @@
-import { useState, useEffect, useRef, useSyncExternalStore } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { ComponentType } from 'react';
 import { marked } from 'marked';
 import type { Note } from './types';
-
-const emptySubscribe = () => () => {};
-const useIsClient = () => useSyncExternalStore(emptySubscribe, () => true, () => false);
+import useIsClient from '~/hooks/useIsClient';
 
 interface NoteContentProps {
   note: Note | null;
