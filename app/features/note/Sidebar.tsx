@@ -19,7 +19,6 @@ interface SidebarProps {
   trashNoteCount?: number;
   onOpenTrash?: () => void;
   isTrashActive?: boolean;
-  pendingNoteIds?: Set<number>;
   isChatOpen: boolean;
   onToggleChat: () => void;
   chatRooms: ChatRoom[];
@@ -49,7 +48,6 @@ const Sidebar = ({
   trashNoteCount = 0,
   onOpenTrash,
   isTrashActive,
-  pendingNoteIds,
   isChatOpen,
   onToggleChat,
   chatRooms,
@@ -230,9 +228,7 @@ const Sidebar = ({
               {note.title}
             </p>
             <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-              {pendingNoteIds?.has(note.id)
-                ? '작성중'
-                : formatDateTime(note.updatedAt)}
+              {formatDateTime(note.updatedAt)}
             </p>
           </button>
           {onDeleteNote && (

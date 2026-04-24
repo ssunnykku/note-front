@@ -9,7 +9,6 @@ interface NoteContentProps {
   onSave?: (noteId: number, title: string, content: string) => Promise<string | void>;
   onDelete?: (noteId: number) => void;
   onBack?: () => void;
-  isPending?: boolean;
   categoryName?: string | null;
   categoryColor?: string | null;
 }
@@ -19,7 +18,6 @@ const NoteContent = ({
   onSave,
   onDelete,
   onBack,
-  isPending,
   categoryName,
   categoryColor,
 }: NoteContentProps) => {
@@ -27,7 +25,6 @@ const NoteContent = ({
   const [content, setContent] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [hasEdited, setHasEdited] = useState(false);
   const initialTitleRef = useRef('');
   const initialContentRef = useRef('');
   const isClient = useIsClient();
@@ -64,7 +61,6 @@ const NoteContent = ({
     // 초기값 저장 (신규 노트 변경 감지용)
     initialTitleRef.current = note.title;
     initialContentRef.current = htmlContent;
-    setHasEdited(false);
     setLastSaved(null);
     // 로드된 노트 ID를 기록하여 자동저장 방지
     loadedNoteIdRef.current = note.id;
@@ -93,8 +89,6 @@ const NoteContent = ({
     const contentChanged = content !== initialContentRef.current;
     if (!titleChanged && !contentChanged) return;
 
-    if (!hasEdited) setHasEdited(true);
-
     // 기존 타이머가 있으면 취소 (타이핑 계속하면 계속 리셋)
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
@@ -119,7 +113,7 @@ const NoteContent = ({
         clearTimeout(debounceTimerRef.current);
       }
     };
-  }, [content, title, isPending]);
+  }, [content, title]);
 
   const handleContentChange = (newContent: string) => {
     setContent(newContent);
@@ -199,24 +193,20 @@ const NoteContent = ({
           className="flex-1 text-2xl font-bold bg-transparent border-none outline-none text-gray-900 dark:text-white placeholder:text-gray-400"
           placeholder="제목 없음"
         />
-        {isPending && !hasEdited ? (
-          <div className="mt-2 text-xs text-gray-400 dark:text-gray-500">작성중</div>
-        ) : (
-          <div className="flex items-center gap-2 mt-2 text-xs">
-            <span className="text-gray-300 dark:text-gray-700">•</span>
-            {isSaving ? (
-              <span className="text-gray-500 dark:text-gray-400">저장 중...</span>
-            ) : lastSaved ? (
-              <span className="text-gray-600 dark:text-gray-300">
-                자동 저장됨 ({lastSaved.toLocaleTimeString()})
-              </span>
-            ) : (
-              <span className="text-gray-400 dark:text-gray-500">
-                자동 저장됨 {isClient && note.updatedAt ? `(${new Date(note.updatedAt).toLocaleTimeString()})` : ''}
-              </span>
-            )}
-          </div>
-        )}
+        <div className="flex items-center gap-2 mt-2 text-xs">
+          <span className="text-gray-300 dark:text-gray-700">•</span>
+          {isSaving ? (
+            <span className="text-gray-500 dark:text-gray-400">저장 중...</span>
+          ) : lastSaved ? (
+            <span className="text-gray-600 dark:text-gray-300">
+              자동 저장됨 ({lastSaved.toLocaleTimeString()})
+            </span>
+          ) : (
+            <span className="text-gray-400 dark:text-gray-500">
+              자동 저장됨 {isClient && note.updatedAt ? `(${new Date(note.updatedAt).toLocaleTimeString()})` : ''}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* 컨텐츠 영역 */}

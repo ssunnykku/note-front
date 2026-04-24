@@ -30,7 +30,6 @@ export default function Home() {
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [mobileView, setMobileView] = useState<'list' | 'editor' | 'chat'>('list');
-  const [pendingNoteIds, setPendingNoteIds] = useState<Set<number>>(new Set());
   const [trashNotes, setTrashNotes] = useState<CategoryNoteItem[]>([]);
   const [isTrashView, setIsTrashView] = useState(false);
 
@@ -68,13 +67,11 @@ export default function Home() {
 
   useEffect(() => {
     if (selectedId === null) return;
-    // 아직 서버에 생성되지 않은 임시 노트는 API 호출하지 않음
-    if (pendingNoteIds.has(selectedId)) return;
     notesApi
       .getById(selectedId)
       .then(setSelectedNote)
       .catch(() => setSelectedNote(null));
-  }, [selectedId, pendingNoteIds]);
+  }, [selectedId]);
 
   const selectedChat = chatRooms.find((c) => c.id === selectedChatId) ?? null;
 
@@ -85,142 +82,87 @@ export default function Home() {
   ): Promise<string | void> => {
     try {
       const categoryId = categories.find((cat) => cat.notes.some((n) => n.id === noteId))?.id;
+      const updated = await notesApi.update(noteId, {
+        title,
+        content,
+        categoryId,
+      });
 
-      if (pendingNoteIds.has(noteId)) {
-        // 아직 서버에 생성되지 않은 노트 → create API 호출
-        const created = await notesApi.create({
-          title,
-          content,
-          categoryId: categoryId,
-        });
-        // pending에서 제거
-        setPendingNoteIds((prev) => {
-          const next = new Set(prev);
-          next.delete(noteId);
-          return next;
-        });
+      const updateNote = (note: CategoryNoteItem) =>
+        note.id === noteId
+          ? { ...note, title: updated.title, updatedAt: updated.updatedAt }
+          : note;
 
-        const updateNote = (note: CategoryNoteItem) =>
-          note.id === noteId
-            ? { ...note, id: created.id, title: created.title, updatedAt: created.updatedAt }
-            : note;
-
-        if (categoryId) {
-          // 카테고리 내 임시 노트를 실제 노트로 교체
-          setCategories((prev) =>
-            prev.map((cat) => ({
-              ...cat,
-              notes: cat.notes.map(updateNote),
-            })),
-          );
-        } else {
-          // 미분류 노트 교체
-          setUncategorizedNotes((prev) => prev.map(updateNote));
-        }
-        setSelectedId(created.id);
-        setSelectedNote((prev) => (prev && prev.id === noteId ? { ...created } : prev));
-        return created.updatedAt;
-      } else {
-        // 기존 노트 → update API 호출
-        const updated = await notesApi.update(noteId, {
-          title,
-          content,
-          categoryId,
-        });
-
-        const updateNote = (note: CategoryNoteItem) =>
-          note.id === noteId
-            ? { ...note, title: updated.title, updatedAt: updated.updatedAt }
-            : note;
-
-        setCategories((prev) =>
-          prev.map((cat) => ({
-            ...cat,
-            notes: cat.notes.map(updateNote),
-          })),
-        );
-        setUncategorizedNotes((prev) => prev.map(updateNote));
-        setSelectedNote((prev) =>
-          prev && prev.id === noteId
-            ? { ...prev, title: updated.title, updatedAt: updated.updatedAt }
-            : prev,
-        );
-        return updated.updatedAt;
-      }
+      setCategories((prev) =>
+        prev.map((cat) => ({
+          ...cat,
+          notes: cat.notes.map(updateNote),
+        })),
+      );
+      setUncategorizedNotes((prev) => prev.map(updateNote));
+      setSelectedNote((prev) =>
+        prev && prev.id === noteId
+          ? { ...prev, title: updated.title, updatedAt: updated.updatedAt }
+          : prev,
+      );
+      return updated.updatedAt;
     } catch (err) {
       console.error('노트 저장 실패:', err);
     }
   };
 
-  const handleAddNote = (categoryId: number) => {
-    const tempId = -Date.now();
-    const now = new Date().toISOString();
-    const noteItem = {
-      id: tempId,
-      title: '새 노트',
-      createdAt: now,
-      updatedAt: now,
-    };
-    setPendingNoteIds((prev) => new Set(prev).add(tempId));
-    setCategories((prev) =>
-      prev.map((cat) =>
-        cat.id === categoryId ? { ...cat, notes: [noteItem, ...cat.notes] } : cat,
-      ),
-    );
-    setSelectedId(tempId);
-    setIsTrashView(false);
-    setSelectedNote({
-      id: tempId,
-      title: '새 노트',
-      content: '',
-      createdAt: now,
-      updatedAt: now,
-    });
-    if (isMobile) setMobileView('editor');
+  const handleAddNote = async (categoryId: number) => {
+    try {
+      const created = await notesApi.create({
+        title: '새 노트',
+        content: '',
+        categoryId,
+      });
+      const noteItem: CategoryNoteItem = {
+        id: created.id,
+        categoryId: created.categoryId,
+        title: created.title,
+        createdAt: created.createdAt,
+        updatedAt: created.updatedAt,
+      };
+      setCategories((prev) =>
+        prev.map((cat) =>
+          cat.id === categoryId ? { ...cat, notes: [noteItem, ...cat.notes] } : cat,
+        ),
+      );
+      setSelectedId(created.id);
+      setIsTrashView(false);
+      setSelectedNote(created);
+      if (isMobile) setMobileView('editor');
+    } catch (err) {
+      console.error('노트 생성 실패:', err);
+    }
   };
 
-  const handleQuickMemo = () => {
-    const tempId = -Date.now();
-    const now = new Date().toISOString();
-    const noteItem: CategoryNoteItem = {
-      id: tempId,
-      title: '새 노트',
-      createdAt: now,
-      updatedAt: now,
-    };
-    setPendingNoteIds((prev) => new Set(prev).add(tempId));
-    setUncategorizedNotes((prev) => [noteItem, ...prev]);
-    setSelectedId(tempId);
-    setIsTrashView(false);
-    setSelectedNote({
-      id: tempId,
-      title: '새 노트',
-      content: '',
-      createdAt: now,
-      updatedAt: now,
-    });
-    if (isMobile) setMobileView('editor');
+  const handleQuickMemo = async () => {
+    try {
+      const created = await notesApi.create({
+        title: '새 노트',
+        content: '',
+      });
+      const noteItem: CategoryNoteItem = {
+        id: created.id,
+        categoryId: created.categoryId,
+        title: created.title,
+        createdAt: created.createdAt,
+        updatedAt: created.updatedAt,
+      };
+      setUncategorizedNotes((prev) => [noteItem, ...prev]);
+      setSelectedId(created.id);
+      setIsTrashView(false);
+      setSelectedNote(created);
+      if (isMobile) setMobileView('editor');
+    } catch (err) {
+      console.error('노트 생성 실패:', err);
+    }
   };
 
   const handleDeleteNote = async (noteId: number) => {
-    // pending 노트는 서버 호출 없이 제거
-    if (pendingNoteIds.has(noteId)) {
-      setPendingNoteIds((prev) => {
-        const next = new Set(prev);
-        next.delete(noteId);
-        return next;
-      });
-      setCategories((prev) =>
-        prev.map((cat) => ({ ...cat, notes: cat.notes.filter((n) => n.id !== noteId) })),
-      );
-      setUncategorizedNotes((prev) => prev.filter((n) => n.id !== noteId));
-      if (selectedId === noteId) {
-        setSelectedId(null);
-        setSelectedNote(null);
-      }
-      return;
-    }
-
     try {
       await notesApi.delete(noteId);
 
@@ -354,28 +296,6 @@ export default function Home() {
     const targetCategory = categories.find((cat) => cat.id === categoryId);
     if (targetCategory?.notes.some((n) => n.id === noteId)) return;
 
-    // pending 노트는 로컬에서만 이동
-    if (pendingNoteIds.has(noteId)) {
-      const fromUncategorized = uncategorizedNotes.find((n) => n.id === noteId);
-      const fromCategory = categories.flatMap((cat) => cat.notes).find((n) => n.id === noteId);
-      const movedNote = fromUncategorized || fromCategory;
-      if (!movedNote) return;
-
-      if (fromUncategorized) {
-        setUncategorizedNotes((prev) => prev.filter((n) => n.id !== noteId));
-      }
-      setCategories((prev) =>
-        prev.map((cat) => {
-          const filtered = cat.notes.filter((n) => n.id !== noteId);
-          if (cat.id === categoryId) {
-            return { ...cat, notes: [movedNote, ...filtered] };
-          }
-          return { ...cat, notes: filtered };
-        }),
-      );
-      return;
-    }
-
     try {
       // 노트 상세 정보를 먼저 가져와서 필수 필드 포함
       const noteDetail = await notesApi.getById(noteId);
@@ -450,22 +370,6 @@ export default function Home() {
   };
 
   const handleSelectNote = (id: number) => {
-    // 편집하지 않은 빈 새 노트는 목록에서 제거
-    if (selectedId !== null && selectedId !== id && pendingNoteIds.has(selectedId)) {
-      const pendingId = selectedId;
-      setPendingNoteIds((prev) => {
-        const next = new Set(prev);
-        next.delete(pendingId);
-        return next;
-      });
-      setCategories((prev) =>
-        prev.map((cat) => ({
-          ...cat,
-          notes: cat.notes.filter((n) => n.id !== pendingId),
-        })),
-      );
-      setUncategorizedNotes((prev) => prev.filter((n) => n.id !== pendingId));
-    }
     setSelectedId(id);
     setIsTrashView(false);
     setIsChatOpen(false);
@@ -543,7 +447,6 @@ export default function Home() {
         onSave={handleSaveNote}
         onDelete={handleDeleteNote}
         onBack={onBack}
-        isPending={selectedNote ? pendingNoteIds.has(selectedNote.id) : false}
         categoryName={noteCategory?.categoryName}
         categoryColor={noteCategoryColor}
       />
@@ -565,7 +468,6 @@ export default function Home() {
     trashNoteCount: trashNotes.length,
     onOpenTrash: handleOpenTrash,
     isTrashActive: isTrashView,
-    pendingNoteIds,
     isChatOpen,
     onToggleChat: handleToggleChat,
     chatRooms,
