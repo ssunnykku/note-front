@@ -82,10 +82,12 @@ export default function Home() {
   ): Promise<string | void> => {
     try {
       const categoryId = categories.find((cat) => cat.notes.some((n) => n.id === noteId))?.id;
+      const version = selectedNote?.id === noteId ? selectedNote.version : 0;
       const updated = await notesApi.update(noteId, {
         title,
         content,
         categoryId,
+        version,
       });
 
       const updateNote = (note: CategoryNoteItem) =>
@@ -102,7 +104,7 @@ export default function Home() {
       setUncategorizedNotes((prev) => prev.map(updateNote));
       setSelectedNote((prev) =>
         prev && prev.id === noteId
-          ? { ...prev, title: updated.title, updatedAt: updated.updatedAt }
+          ? { ...prev, title: updated.title, updatedAt: updated.updatedAt, version: updated.version }
           : prev,
       );
       return updated.updatedAt;
@@ -303,6 +305,7 @@ export default function Home() {
         title: noteDetail.title,
         content: noteDetail.content,
         categoryId,
+        version: noteDetail.version,
       });
 
       let movedNote: CategoryNoteItem | undefined;

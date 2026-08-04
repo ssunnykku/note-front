@@ -11,6 +11,7 @@ interface UpdateNoteRequest {
   title: string;
   content: string;
   categoryId?: number;
+  version: number;
 }
 
 export const notesApi = {

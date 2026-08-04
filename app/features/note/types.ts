@@ -22,6 +22,7 @@ export interface Note {
   createdAt: string;
   updatedAt: string;
   deletedAt?: string;
+  version: number;
 }
 
 export interface ChatRoom {
