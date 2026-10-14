@@ -1,6 +1,8 @@
 .DS_Store
 .env
 .env.*
+# API URL 등 민감정보 아닌 값이라 빌드 파이프라인에서 필요해서 추적함
+!.env.production
 /node_modules/
 
 # React Router
@@ -13,3 +15,6 @@
 
 # OS
 Thumbs.db
+
+# 임시 배포용 SSH 키 (GitHub Secrets/맥미니에 등록 후 삭제할 것)
+/deploy-keys/
