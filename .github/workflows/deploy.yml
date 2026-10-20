@@ -33,21 +33,35 @@ jobs:
         with:
           authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
 
-      - name: Ensure deploy directory exists
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          script: mkdir -p /Users/dev/projects/note/deploy/front/dist
+      # appleboy/scp-action, appleboy/ssh-action은 Docker 컨테이너 액션이라 러너 호스트의
+      # tailscale0 인터페이스에 접근하지 못함. run: 스텝(호스트에서 직접 실행)으로 대체.
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          cat >> ~/.ssh/config <<EOF
+          Host deploy-target
+            HostName ${{ secrets.HOST }}
+            User ${{ secrets.SERVER_USER }}
+            IdentityFile ~/.ssh/deploy_key
+            StrictHostKeyChecking no
+            UserKnownHostsFile /dev/null
+          EOF
+
+      - name: Prepare remote directory
+        run: ssh deploy-target 'mkdir -p /Users/dev/projects/note/deploy/front/dist'
 
       - name: Deploy static files to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          source: 'build/client/*'
-          target: '/Users/dev/projects/note/deploy/front/dist'
-          strip_components: 2
-          rm: true
+        run: |
+          ssh deploy-target 'rm -rf /Users/dev/projects/note/deploy/front/dist/*'
+          scp -r build/client/* deploy-target:/Users/dev/projects/note/deploy/front/dist/
+
+      - name: Restart nginx to pick up new files
+        run: |
+          ssh deploy-target '
+            export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+            export DOCKER_HOST="unix:///Users/dev/.colima/default/docker.sock"
+            cd /Users/dev/projects/note/deploy/back/docker
+            docker compose -f docker-compose.dev.yml up -d --force-recreate nginx
+          '
