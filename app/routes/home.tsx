@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useOutletContext } from 'react-router';
+import { useOutletContext, useSearchParams } from 'react-router';
 import Sidebar from '~/features/note/Sidebar';
 import NoteContent from '~/features/note/NoteContent';
 import TrashListView from '~/features/note/TrashListView';
@@ -22,9 +22,14 @@ export function meta() {
 
 export default function Home() {
   const { isMobile, sidebarOpen, setSidebarOpen } = useOutletContext<LayoutContext>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [categories, setCategories] = useState<Category[]>([]);
   const [uncategorizedNotes, setUncategorizedNotes] = useState<CategoryNoteItem[]>([]);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedId, setSelectedId] = useState<number | null>(() => {
+    const noteParam = searchParams.get('note');
+    const parsed = noteParam ? Number(noteParam) : NaN;
+    return Number.isFinite(parsed) ? parsed : null;
+  });
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
@@ -72,6 +77,22 @@ export default function Home() {
       .then(setSelectedNote)
       .catch(() => setSelectedNote(null));
   }, [selectedId]);
+
+  // 새로고침 후에도 보고 있던 노트를 유지하기 위해 선택된 노트 id를 URL에 반영
+  useEffect(() => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (selectedId === null) {
+          next.delete('note');
+        } else {
+          next.set('note', String(selectedId));
+        }
+        return next;
+      },
+      { replace: true },
+    );
+  }, [selectedId, setSearchParams]);
 
   const selectedChat = chatRooms.find((c) => c.id === selectedChatId) ?? null;
 

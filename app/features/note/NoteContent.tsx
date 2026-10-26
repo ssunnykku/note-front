@@ -45,10 +45,34 @@ const NoteContent = ({
   const loadedNoteIdRef = useRef<number | null>(null);
   const prevNoteIdRef = useRef<number | null>(null);
 
+  // 최신 값을 ref에 저장하여 effect deps 문제 방지
+  const noteRef = useRef(note);
+  const onSaveRef = useRef(onSave);
+  const titleRef = useRef(title);
+  const contentRef = useRef(content);
+  noteRef.current = note;
+  onSaveRef.current = onSave;
+  titleRef.current = title;
+  contentRef.current = content;
+
   useEffect(() => {
     if (!note) return;
     // 같은 노트의 prop 변경(자동저장 후 갱신)은 무시
     if (prevNoteIdRef.current === note.id) return;
+
+    // 다른 노트로 전환하기 직전, 아직 전송되지 않은 자동저장이 대기 중이면
+    // 타이머만 지우고 버리지 말고 지금 바로 저장해서 유실을 막는다
+    if (prevNoteIdRef.current !== null && debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+      const pendingNoteId = prevNoteIdRef.current;
+      const pendingTitle = titleRef.current;
+      const pendingContent = contentRef.current;
+      onSaveRef.current?.(pendingNoteId, pendingTitle, pendingContent).catch((err) => {
+        console.error('노트 전환 전 자동 저장 실패:', err);
+      });
+    }
+
     prevNoteIdRef.current = note.id;
 
     setTitle(note.title);
@@ -65,12 +89,6 @@ const NoteContent = ({
     // 로드된 노트 ID를 기록하여 자동저장 방지
     loadedNoteIdRef.current = note.id;
   }, [note]);
-
-  // 최신 값을 ref에 저장하여 effect deps 문제 방지
-  const noteRef = useRef(note);
-  const onSaveRef = useRef(onSave);
-  noteRef.current = note;
-  onSaveRef.current = onSave;
 
   // 디바운스된 자동 저장 (타이핑 멈춘 후 1초 뒤 한 번만 저장)
   useEffect(() => {

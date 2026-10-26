@@ -94,6 +94,9 @@ const AiChatPanel = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // 한글 등 조합형 입력 중 Enter로 글자를 조합 확정할 때도 keydown이 발생하므로
+    // 조합이 끝나지 않았으면 전송하지 않는다 (안 그러면 마지막 글자가 별도 메시지로 전송됨)
+    if (e.nativeEvent.isComposing || e.keyCode === 229) return;
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
