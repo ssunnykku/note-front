@@ -44,7 +44,7 @@ const AiChatPanel = ({
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, isSending]);
 
   useEffect(() => {
     if (!isModelDropdownOpen) return;
@@ -219,6 +219,17 @@ const AiChatPanel = ({
             </div>
           </div>
         ))}
+        {isSending && (
+          <div className="flex justify-start">
+            <div className="max-w-[70%] rounded-lg px-4 py-3 bg-gray-100 dark:bg-gray-800">
+              <div className="flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-500 animate-bounce [animation-delay:-0.3s]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-500 animate-bounce [animation-delay:-0.15s]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-500 animate-bounce" />
+              </div>
+            </div>
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
 
