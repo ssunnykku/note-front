@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
+import { chatApi } from '~/lib/api/chat';
 
 interface ChatMessage {
   id: string;
@@ -7,12 +8,9 @@ interface ChatMessage {
   timestamp: Date;
 }
 
+// 서버에 실제로 pull된 모델만 노출한다. Qwen3 14B는 아직 미설치라 제외.
 const AI_MODELS = [
-  { id: 'dev', label: '개발', color: '#6366f1', icon: '💻', desc: '프로그래밍·개발 질문 특화' },
-  { id: 'study', label: '학습', color: '#f59e0b', icon: '📚', desc: '공부·학습 도우미' },
-  { id: 'fitness', label: '운동', color: '#10b981', icon: '💪', desc: '운동·건강 관리 특화' },
-  { id: 'writing', label: '글쓰기', color: '#ec4899', icon: '✍️', desc: '문서·글쓰기 도우미' },
-  { id: 'daily', label: '일상', color: '#8b5cf6', icon: '☀️', desc: '일상 대화·일정 관리' },
+  { id: 'qwen3:8b', label: 'Qwen3 8B', color: '#6366f1', icon: '⚡', desc: '빠른 응답 (기본)' },
 ] as const;
 
 interface AiChatPanelProps {
@@ -30,13 +28,14 @@ const AiChatPanel = ({
   chatTitle,
   onClose,
   onBack,
-  selectedModelId = 'gpt-4o',
+  selectedModelId = 'qwen3:8b',
   onModelChange,
   onLastMessageUpdate,
 }: AiChatPanelProps) => {
   const [messagesByChat, setMessagesByChat] = useState<Record<string, ChatMessage[]>>({});
   const [input, setInput] = useState('');
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -58,9 +57,9 @@ const AiChatPanel = ({
     return () => document.removeEventListener('mousedown', handleClick);
   }, [isModelDropdownOpen]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     const trimmed = input.trim();
-    if (!trimmed) return;
+    if (!trimmed || isSending) return;
 
     const userMessage: ChatMessage = {
       id: String(Date.now()),
@@ -75,22 +74,39 @@ const AiChatPanel = ({
     }));
     setInput('');
     onLastMessageUpdate?.(chatId, trimmed);
+    setIsSending(true);
 
-    // AI 응답 시뮬레이션
-    setTimeout(() => {
-      const aiContent = `"${trimmed}"에 대한 답변을 준비 중입니다. (AI 연동 예정)`;
+    try {
+      const response = await chatApi.sendMessage(chatId, {
+        content: trimmed,
+        modelId: selectedModelId,
+      });
       const aiMessage: ChatMessage = {
-        id: String(Date.now() + 1),
+        id: response.id,
         role: 'ai',
-        content: aiContent,
-        timestamp: new Date(),
+        content: response.content,
+        timestamp: new Date(response.createdAt),
       };
       setMessagesByChat((prev) => ({
         ...prev,
         [chatId]: [...(prev[chatId] ?? []), aiMessage],
       }));
-      onLastMessageUpdate?.(chatId, aiContent);
-    }, 500);
+      onLastMessageUpdate?.(chatId, response.content);
+    } catch (error) {
+      console.error('[AiChatPanel] 메시지 전송 실패', error);
+      const errorMessage: ChatMessage = {
+        id: String(Date.now() + 1),
+        role: 'ai',
+        content: '답변을 가져오지 못했습니다. 잠시 후 다시 시도해주세요.',
+        timestamp: new Date(),
+      };
+      setMessagesByChat((prev) => ({
+        ...prev,
+        [chatId]: [...(prev[chatId] ?? []), errorMessage],
+      }));
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -294,13 +310,14 @@ const AiChatPanel = ({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="메시지를 입력하세요..."
+            placeholder={isSending ? 'AI가 답변을 생성하는 중...' : '메시지를 입력하세요...'}
             rows={1}
-            className="flex-1 resize-none rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 outline-none focus:border-accent dark:focus:border-accent transition-colors"
+            disabled={isSending}
+            className="flex-1 resize-none rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 outline-none focus:border-accent dark:focus:border-accent transition-colors disabled:opacity-60"
           />
           <button
             onClick={handleSend}
-            disabled={!input.trim()}
+            disabled={!input.trim() || isSending}
             className="shrink-0 w-9 h-9 flex items-center justify-center rounded-lg bg-accent text-white hover:bg-accent-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             aria-label="전송"
           >

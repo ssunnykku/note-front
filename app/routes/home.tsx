@@ -435,7 +435,7 @@ export default function Home() {
           chatTitle={selectedChat.title}
           onClose={() => setSelectedChatId(null)}
           onBack={onBack}
-          selectedModelId={selectedChat.modelId ?? 'dev'}
+          selectedModelId={selectedChat.modelId ?? 'qwen3:8b'}
           onModelChange={(modelId) => handleModelChange(selectedChat.id, modelId)}
           onLastMessageUpdate={handleLastMessageUpdate}
         />
@@ -526,7 +526,7 @@ export default function Home() {
             chatTitle={selectedChat.title}
             onClose={() => setSelectedChatId(null)}
             onBack={handleMobileBack}
-            selectedModelId={selectedChat.modelId ?? 'dev'}
+            selectedModelId={selectedChat.modelId ?? 'qwen3:8b'}
             onModelChange={(modelId) => handleModelChange(selectedChat.id, modelId)}
             onLastMessageUpdate={handleLastMessageUpdate}
           />
