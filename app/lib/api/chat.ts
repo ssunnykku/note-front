@@ -12,6 +12,6 @@ interface SendMessageResponse {
 }
 
 export const chatApi = {
-  sendMessage: (chatId: string, data: SendMessageRequest) =>
+  sendMessage: (chatId: number, data: SendMessageRequest) =>
     apiClient.post<SendMessageResponse>(`/chats/${chatId}/messages`, data).then((r) => r.data),
 };
