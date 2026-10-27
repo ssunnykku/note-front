@@ -5,7 +5,9 @@ import NoteContent from '~/features/note/NoteContent';
 import TrashListView from '~/features/note/TrashListView';
 import AiChatPanel from '~/features/ai/AiChatPanel';
 import { categoriesApi } from '~/lib/api/categories';
+import { chatsApi } from '~/lib/api/chats';
 import { notesApi } from '~/lib/api/notes';
+import { logError } from '~/lib/logError';
 import Palette from '~/lib/palette';
 import type { Note, Category, CategoryNoteItem, ChatRoom } from '~/features/note/types';
 
@@ -33,7 +35,7 @@ export default function Home() {
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
-  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const [selectedChatId, setSelectedChatId] = useState<number | null>(null);
   const [mobileView, setMobileView] = useState<'list' | 'editor' | 'chat'>('list');
   const [trashNotes, setTrashNotes] = useState<CategoryNoteItem[]>([]);
   const [isTrashView, setIsTrashView] = useState(false);
@@ -49,7 +51,7 @@ export default function Home() {
         }
       })
       .catch((err) => {
-        console.error('카테고리 로딩 실패:', err);
+        logError('카테고리 로딩 실패', err);
       });
 
     // 미분류 노트 조회 (categoryId = null)
@@ -68,6 +70,18 @@ export default function Home() {
       })
       .catch(() => {});
 
+    chatsApi
+      .getAll()
+      // 응답 전에 로컬에서 만든 채팅이 덮어써지지 않도록 병합
+      .then((fetched) => {
+        setChatRooms((prev) => [
+          ...prev.filter((local) => !fetched.some((room) => room.id === local.id)),
+          ...fetched,
+        ]);
+      })
+      .catch((err) => {
+        logError('채팅 목록 로딩 실패', err);
+      });
   }, []);
 
   useEffect(() => {
@@ -130,7 +144,7 @@ export default function Home() {
       );
       return updated.updatedAt;
     } catch (err) {
-      console.error('노트 저장 실패:', err);
+      logError('노트 저장 실패', err);
     }
   };
 
@@ -158,7 +172,7 @@ export default function Home() {
       setSelectedNote(created);
       if (isMobile) setMobileView('editor');
     } catch (err) {
-      console.error('노트 생성 실패:', err);
+      logError('노트 생성 실패', err);
     }
   };
 
@@ -181,7 +195,7 @@ export default function Home() {
       setSelectedNote(created);
       if (isMobile) setMobileView('editor');
     } catch (err) {
-      console.error('노트 생성 실패:', err);
+      logError('노트 생성 실패', err);
     }
   };
 
@@ -216,7 +230,7 @@ export default function Home() {
         setSelectedNote(null);
       }
     } catch (err) {
-      console.error('노트 삭제 실패:', err);
+      logError('노트 삭제 실패', err);
     }
   };
 
@@ -241,7 +255,7 @@ export default function Home() {
         }
       }
     } catch (err) {
-      console.error('노트 복원 실패:', err);
+      logError('노트 복원 실패', err);
     }
   };
 
@@ -250,7 +264,7 @@ export default function Home() {
       await notesApi.permanentDelete(noteId);
       setTrashNotes((prev) => prev.filter((n) => n.id !== noteId));
     } catch (err) {
-      console.error('영구 삭제 실패:', err);
+      logError('영구 삭제 실패', err);
     }
   };
 
@@ -272,7 +286,7 @@ export default function Home() {
       );
       setTrashNotes(trashItems);
     } catch (err) {
-      console.error('휴지통 로딩 실패:', err);
+      logError('휴지통 로딩 실패', err);
     }
   };
 
@@ -281,7 +295,7 @@ export default function Home() {
       const created = await categoriesApi.create({ name });
       setCategories((prev) => [...prev, { ...created, notes: created.notes ?? [] }]);
     } catch (err) {
-      console.error('카테고리 생성 실패:', err);
+      logError('카테고리 생성 실패', err);
     }
   };
 
@@ -292,7 +306,7 @@ export default function Home() {
         prev.map((cat) => (cat.id === categoryId ? { ...cat, categoryName: name } : cat)),
       );
     } catch (err) {
-      console.error('카테고리 이름 변경 실패:', err);
+      logError('카테고리 이름 변경 실패', err);
     }
   };
 
@@ -310,7 +324,7 @@ export default function Home() {
 
       setCategories((prev) => prev.filter((cat) => cat.id !== categoryId));
     } catch (err) {
-      console.error('카테고리 삭제 실패:', err);
+      logError('카테고리 삭제 실패', err);
     }
   };
 
@@ -351,7 +365,7 @@ export default function Home() {
         }),
       );
     } catch (err) {
-      console.error('노트 이동 실패:', err);
+      logError('노트 이동 실패', err);
     }
   };
 
@@ -367,13 +381,13 @@ export default function Home() {
     }
   };
 
-  const handleRenameChat = (chatId: string, title: string) => {
+  const handleRenameChat = (chatId: number, title: string) => {
     setChatRooms((prev) => prev.map((chat) => (chat.id === chatId ? { ...chat, title } : chat)));
   };
 
   const handleAddChat = () => {
     const newChat: ChatRoom = {
-      id: String(Date.now()),
+      id: Date.now(),
       title: `새 채팅 ${chatRooms.length + 1}`,
       createdAt: new Date().toISOString(),
     };
@@ -383,13 +397,13 @@ export default function Home() {
     if (isMobile) setMobileView('chat');
   };
 
-  const handleLastMessageUpdate = (chatId: string, message: string) => {
+  const handleLastMessageUpdate = (chatId: number, message: string) => {
     setChatRooms((prev) =>
       prev.map((chat) => (chat.id === chatId ? { ...chat, lastMessage: message } : chat)),
     );
   };
 
-  const handleModelChange = (chatId: string, modelId: string) => {
+  const handleModelChange = (chatId: number, modelId: string) => {
     setChatRooms((prev) => prev.map((chat) => (chat.id === chatId ? { ...chat, modelId } : chat)));
   };
 
@@ -404,7 +418,7 @@ export default function Home() {
     }
   };
 
-  const handleSelectChat = (chatId: string) => {
+  const handleSelectChat = (chatId: number) => {
     setSelectedChatId(chatId);
     if (isMobile) {
       setMobileView('chat');

@@ -22,10 +22,10 @@ interface SidebarProps {
   isChatOpen: boolean;
   onToggleChat: () => void;
   chatRooms: ChatRoom[];
-  selectedChatId: string | null;
-  onSelectChat: (chatId: string) => void;
+  selectedChatId: number | null;
+  onSelectChat: (chatId: number) => void;
   onAddChat: () => void;
-  onRenameChat: (chatId: string, title: string) => void;
+  onRenameChat: (chatId: number, title: string) => void;
   forceMobile?: boolean;
 }
 
@@ -58,7 +58,7 @@ const Sidebar = ({
   forceMobile,
 }: SidebarProps) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [editingChatId, setEditingChatId] = useState<string | null>(null);
+  const [editingChatId, setEditingChatId] = useState<number | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
   const editInputRef = useRef<HTMLInputElement>(null);
   const [isAddingCategory, setIsAddingCategory] = useState(false);
@@ -135,7 +135,7 @@ const Sidebar = ({
     setNewCategoryName('');
   };
 
-  const startRename = (chatId: string, currentTitle: string) => {
+  const startRename = (chatId: number, currentTitle: string) => {
     setEditingChatId(chatId);
     setEditingTitle(currentTitle);
   };

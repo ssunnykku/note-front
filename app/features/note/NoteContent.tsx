@@ -3,6 +3,7 @@ import type { ComponentType } from 'react';
 import { marked } from 'marked';
 import type { Note } from './types';
 import useIsClient from '~/hooks/useIsClient';
+import { logError } from '~/lib/logError';
 
 interface NoteContentProps {
   note: Note | null;
@@ -119,7 +120,7 @@ const NoteContent = ({
         const serverUpdatedAt = await currentOnSave(currentNote.id, title, content);
         setLastSaved(serverUpdatedAt ? new Date(serverUpdatedAt) : new Date());
       } catch (err) {
-        console.error('자동 저장 실패:', err);
+        logError('자동 저장 실패', err);
       } finally {
         setIsSaving(false);
       }
