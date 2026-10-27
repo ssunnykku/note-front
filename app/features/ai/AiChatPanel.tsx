@@ -1,47 +1,52 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
-import { chatApi } from '~/lib/api/chat';
-import { logError } from '~/lib/logError';
-
-interface ChatMessage {
-  id: string;
-  role: 'user' | 'ai';
-  content: string;
-  timestamp: Date;
-}
+import { useState, useRef, useEffect } from 'react';
+import Loading from '~/components/ui/Loading';
+import { MESSAGE_MAX_LENGTH } from '~/lib/api/chat';
+import type { ChatMessage, ChatMessagesStore } from './useChatMessages';
 
 // 서버에 실제로 pull된 모델만 노출한다. Qwen3 14B는 아직 미설치라 제외.
 const AI_MODELS = [
   { id: 'qwen3:8b', label: 'Qwen3 8B', color: '#6366f1', icon: '⚡', desc: '빠른 응답 (기본)' },
 ] as const;
 
+const EMPTY_MESSAGES: ChatMessage[] = [];
+
 interface AiChatPanelProps {
   chatId: number;
   chatTitle: string;
+  // 메시지 상태는 home에서 유지 (패널이 언마운트돼도 진행 중인 응답 보존)
+  store: ChatMessagesStore;
   onClose: () => void;
   onBack?: () => void;
   selectedModelId?: string;
   onModelChange?: (modelId: string) => void;
-  onLastMessageUpdate?: (chatId: number, message: string) => void;
 }
 
 const AiChatPanel = ({
   chatId,
   chatTitle,
+  store,
   onClose,
   onBack,
   selectedModelId = 'qwen3:8b',
   onModelChange,
-  onLastMessageUpdate,
 }: AiChatPanelProps) => {
-  const [messagesByChat, setMessagesByChat] = useState<Record<number, ChatMessage[]>>({});
-  const [input, setInput] = useState('');
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
-  const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const messages = useMemo(() => messagesByChat[chatId] ?? [], [messagesByChat, chatId]);
+  const { ensureLoaded, sendingChatId, notice } = store;
+  const messages = store.messagesByChat[chatId] ?? EMPTY_MESSAGES;
+  const input = store.drafts[chatId] ?? '';
   const currentModel = AI_MODELS.find((m) => m.id === selectedModelId) ?? AI_MODELS[0];
+  const isLoading = store.loadStatusByChat[chatId] === 'loading';
+  const isLoadError = store.loadStatusByChat[chatId] === 'error';
+  const isSending = sendingChatId === chatId;
+  const isWaitingOtherChat = sendingChatId !== null && !isSending;
+  const isInputDisabled = sendingChatId !== null || isLoading || isLoadError;
+
+  useEffect(() => {
+    ensureLoaded(chatId);
+  }, [chatId, ensureLoaded]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -58,56 +63,11 @@ const AiChatPanel = ({
     return () => document.removeEventListener('mousedown', handleClick);
   }, [isModelDropdownOpen]);
 
-  const handleSend = async () => {
+  const handleSend = () => {
     const trimmed = input.trim();
-    if (!trimmed || isSending) return;
-
-    const userMessage: ChatMessage = {
-      id: String(Date.now()),
-      role: 'user',
-      content: trimmed,
-      timestamp: new Date(),
-    };
-
-    setMessagesByChat((prev) => ({
-      ...prev,
-      [chatId]: [...(prev[chatId] ?? []), userMessage],
-    }));
-    setInput('');
-    onLastMessageUpdate?.(chatId, trimmed);
-    setIsSending(true);
-
-    try {
-      const response = await chatApi.sendMessage(chatId, {
-        content: trimmed,
-        modelId: selectedModelId,
-      });
-      const aiMessage: ChatMessage = {
-        id: response.id,
-        role: 'ai',
-        content: response.content,
-        timestamp: new Date(response.createdAt),
-      };
-      setMessagesByChat((prev) => ({
-        ...prev,
-        [chatId]: [...(prev[chatId] ?? []), aiMessage],
-      }));
-      onLastMessageUpdate?.(chatId, response.content);
-    } catch (error) {
-      logError('메시지 전송 실패', error);
-      const errorMessage: ChatMessage = {
-        id: String(Date.now() + 1),
-        role: 'ai',
-        content: '답변을 가져오지 못했습니다. 잠시 후 다시 시도해주세요.',
-        timestamp: new Date(),
-      };
-      setMessagesByChat((prev) => ({
-        ...prev,
-        [chatId]: [...(prev[chatId] ?? []), errorMessage],
-      }));
-    } finally {
-      setIsSending(false);
-    }
+    if (!trimmed || isInputDisabled) return;
+    store.setDraft(chatId, '');
+    store.send(chatId, trimmed, selectedModelId);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -186,7 +146,19 @@ const AiChatPanel = ({
 
       {/* 메시지 영역 */}
       <div className="flex-1 overflow-y-auto px-4 py-4 lg:px-6 lg:py-6 space-y-4">
-        {messages.length === 0 && (
+        {isLoading && messages.length === 0 && <Loading />}
+        {isLoadError && (
+          <div className="flex flex-col items-center justify-center h-full gap-3 text-sm text-gray-500 dark:text-gray-400">
+            <p>대화를 불러오지 못했습니다</p>
+            <button
+              onClick={() => store.reload(chatId)}
+              className="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              다시 시도
+            </button>
+          </div>
+        )}
+        {!isLoading && !isLoadError && messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-500 gap-3">
             <svg
               className="w-12 h-12"
@@ -207,17 +179,37 @@ const AiChatPanel = ({
         {messages.map((msg) => (
           <div
             key={msg.id}
-            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            className={`flex flex-col gap-1 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
           >
             <div
               className={`max-w-[70%] rounded-lg px-4 py-2.5 text-sm ${
                 msg.role === 'user'
                   ? 'bg-accent text-white'
                   : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
-              }`}
+              } ${msg.failure ? 'opacity-60' : ''}`}
             >
               {msg.content}
             </div>
+            {msg.failure && (
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-red-500">{msg.failure.reason}</span>
+                {msg.failure.canRetry && (
+                  <button
+                    onClick={() => store.retry(chatId, msg, selectedModelId)}
+                    disabled={isInputDisabled}
+                    className="font-medium text-gray-600 dark:text-gray-300 hover:text-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    다시 시도
+                  </button>
+                )}
+                <button
+                  onClick={() => store.deleteFailed(chatId, msg.id)}
+                  className="text-gray-400 dark:text-gray-500 hover:text-red-500 transition-colors"
+                >
+                  삭제
+                </button>
+              </div>
+            )}
           </div>
         ))}
         {isSending && (
@@ -236,6 +228,9 @@ const AiChatPanel = ({
 
       {/* 입력 영역 */}
       <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-3 lg:px-6 lg:py-4">
+        {notice?.chatId === chatId && (
+          <p className="mb-2 text-xs text-amber-600 dark:text-amber-400">{notice.text}</p>
+        )}
         {/* 모델 선택 */}
         <div className="relative mb-2" ref={dropdownRef}>
           <button
@@ -320,16 +315,23 @@ const AiChatPanel = ({
         <div className="flex items-end gap-3">
           <textarea
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => store.setDraft(chatId, e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={isSending ? 'AI가 답변을 생성하는 중...' : '메시지를 입력하세요...'}
+            placeholder={
+              isSending
+                ? 'AI가 답변을 생성하는 중...'
+                : isWaitingOtherChat
+                  ? '다른 채팅의 답변을 기다리는 중...'
+                  : '메시지를 입력하세요...'
+            }
+            maxLength={MESSAGE_MAX_LENGTH}
             rows={1}
-            disabled={isSending}
+            disabled={isInputDisabled}
             className="flex-1 resize-none rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 outline-none focus:border-accent dark:focus:border-accent transition-colors disabled:opacity-60"
           />
           <button
             onClick={handleSend}
-            disabled={!input.trim() || isSending}
+            disabled={!input.trim() || isInputDisabled}
             className="shrink-0 w-9 h-9 flex items-center justify-center rounded-lg bg-accent text-white hover:bg-accent-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             aria-label="전송"
           >

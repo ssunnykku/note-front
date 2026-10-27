@@ -4,8 +4,10 @@ import Sidebar from '~/features/note/Sidebar';
 import NoteContent from '~/features/note/NoteContent';
 import TrashListView from '~/features/note/TrashListView';
 import AiChatPanel from '~/features/ai/AiChatPanel';
+import useChatMessages from '~/features/ai/useChatMessages';
+import type { MessageSentResult } from '~/features/ai/useChatMessages';
 import { categoriesApi } from '~/lib/api/categories';
-import { chatsApi } from '~/lib/api/chats';
+import { CHAT_TITLE_MAX_LENGTH, chatsApi } from '~/lib/api/chats';
 import { notesApi } from '~/lib/api/notes';
 import { logError } from '~/lib/logError';
 import Palette from '~/lib/palette';
@@ -17,6 +19,8 @@ interface LayoutContext {
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
 }
+
+const CHAT_CREATE_ERROR_DURATION_MS = 4000;
 
 export function meta() {
   return [{ title: 'Note' }, { name: 'description', content: '노트 작성 서비스' }];
@@ -36,6 +40,8 @@ export default function Home() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
   const [selectedChatId, setSelectedChatId] = useState<number | null>(null);
+  const [isCreatingChat, setIsCreatingChat] = useState(false);
+  const [chatCreateError, setChatCreateError] = useState<string | null>(null);
   const [mobileView, setMobileView] = useState<'list' | 'editor' | 'chat'>('list');
   const [trashNotes, setTrashNotes] = useState<CategoryNoteItem[]>([]);
   const [isTrashView, setIsTrashView] = useState(false);
@@ -91,6 +97,13 @@ export default function Home() {
       .then(setSelectedNote)
       .catch(() => setSelectedNote(null));
   }, [selectedId]);
+
+  // 채팅 생성 실패 안내는 잠시 후 자동으로 사라짐
+  useEffect(() => {
+    if (!chatCreateError) return;
+    const timer = setTimeout(() => setChatCreateError(null), CHAT_CREATE_ERROR_DURATION_MS);
+    return () => clearTimeout(timer);
+  }, [chatCreateError]);
 
   // 새로고침 후에도 보고 있던 노트를 유지하기 위해 선택된 노트 id를 URL에 반영
   useEffect(() => {
@@ -385,23 +398,44 @@ export default function Home() {
     setChatRooms((prev) => prev.map((chat) => (chat.id === chatId ? { ...chat, title } : chat)));
   };
 
-  const handleAddChat = () => {
-    const newChat: ChatRoom = {
-      id: Date.now(),
-      title: `새 채팅 ${chatRooms.length + 1}`,
-      createdAt: new Date().toISOString(),
-    };
-    setChatRooms((prev) => [newChat, ...prev]);
-    setSelectedChatId(newChat.id);
-    setIsChatOpen(true);
-    if (isMobile) setMobileView('chat');
+  const handleAddChat = async () => {
+    if (isCreatingChat) return;
+    setIsCreatingChat(true);
+    setChatCreateError(null);
+    try {
+      const newChat = await chatsApi.create();
+      setChatRooms((prev) => [newChat, ...prev.filter((chat) => chat.id !== newChat.id)]);
+      setSelectedChatId(newChat.id);
+      setIsChatOpen(true);
+      if (isMobile) setMobileView('chat');
+    } catch (err) {
+      logError('채팅 생성 실패', err);
+      setChatCreateError('채팅을 만들지 못했습니다. 다시 시도해주세요');
+    } finally {
+      setIsCreatingChat(false);
+    }
   };
 
-  const handleLastMessageUpdate = (chatId: number, message: string) => {
+  // 서버 기준과 동일하게 반영: lastMessage는 AI 답변, title은 첫 사용자 메시지
+  const handleMessageSent = (
+    chatId: number,
+    { userContent, aiContent, modelId, isFirstMessage }: MessageSentResult,
+  ) => {
     setChatRooms((prev) =>
-      prev.map((chat) => (chat.id === chatId ? { ...chat, lastMessage: message } : chat)),
+      prev.map((chat) =>
+        chat.id === chatId
+          ? {
+              ...chat,
+              lastMessage: aiContent,
+              modelId,
+              ...(isFirstMessage && { title: userContent.slice(0, CHAT_TITLE_MAX_LENGTH) }),
+            }
+          : chat,
+      ),
     );
   };
+
+  const chatMessagesStore = useChatMessages({ onMessageSent: handleMessageSent });
 
   const handleModelChange = (chatId: number, modelId: string) => {
     setChatRooms((prev) => prev.map((chat) => (chat.id === chatId ? { ...chat, modelId } : chat)));
@@ -451,7 +485,7 @@ export default function Home() {
           onBack={onBack}
           selectedModelId={selectedChat.modelId ?? 'qwen3:8b'}
           onModelChange={(modelId) => handleModelChange(selectedChat.id, modelId)}
-          onLastMessageUpdate={handleLastMessageUpdate}
+          store={chatMessagesStore}
         />
       );
     }
@@ -512,6 +546,8 @@ export default function Home() {
     selectedChatId,
     onSelectChat: handleSelectChat,
     onAddChat: handleAddChat,
+    isCreatingChat,
+    chatCreateError,
     onRenameChat: handleRenameChat,
   };
 
@@ -542,7 +578,7 @@ export default function Home() {
             onBack={handleMobileBack}
             selectedModelId={selectedChat.modelId ?? 'qwen3:8b'}
             onModelChange={(modelId) => handleModelChange(selectedChat.id, modelId)}
-            onLastMessageUpdate={handleLastMessageUpdate}
+            store={chatMessagesStore}
           />
         ) : (
           renderMainContent(handleMobileBack)
