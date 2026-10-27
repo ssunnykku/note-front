@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { chatApi } from '~/lib/api/chat';
+import { logError } from '~/lib/logError';
 
 interface ChatMessage {
   id: string;
@@ -93,7 +94,7 @@ const AiChatPanel = ({
       }));
       onLastMessageUpdate?.(chatId, response.content);
     } catch (error) {
-      console.error('[AiChatPanel] 메시지 전송 실패', error);
+      logError('메시지 전송 실패', error);
       const errorMessage: ChatMessage = {
         id: String(Date.now() + 1),
         role: 'ai',
