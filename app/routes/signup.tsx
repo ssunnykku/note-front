@@ -1,7 +1,17 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { authApi } from '~/lib/api/auth';
-import { PASSWORD_MAX_LENGTH, PASSWORD_RULE_MESSAGE, isPasswordInvalid } from '~/lib/auth';
+import {
+  EMAIL_MAX_LENGTH,
+  EMAIL_RULE_MESSAGE,
+  NAME_MAX_LENGTH,
+  NAME_RULE_MESSAGE,
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_RULE_MESSAGE,
+  isEmailInvalid,
+  isNameInvalid,
+  isPasswordInvalid,
+} from '~/lib/auth';
 
 export function meta() {
   return [{ title: '회원가입 - Note' }, { name: 'description', content: '회원가입' }];
@@ -24,12 +34,15 @@ export default function Signup() {
     }
   }, [navigate]);
 
+  const nameInvalid = isNameInvalid(nickname);
+  const emailInvalid = isEmailInvalid(email);
   const passwordInvalid = isPasswordInvalid(password);
   const passwordMismatch = passwordConfirm.length > 0 && password !== passwordConfirm;
+  const hasInvalidField = nameInvalid || emailInvalid || passwordInvalid || passwordMismatch;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (passwordInvalid || passwordMismatch) return;
+    if (hasInvalidField) return;
     setError('');
     try {
       await authApi.signup({ name: nickname, email, password, passwordConfirm });
@@ -66,8 +79,14 @@ export default function Signup() {
               onChange={(e) => setNickname(e.target.value)}
               placeholder="닉네임을 입력하세요"
               required
-              className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
+              maxLength={NAME_MAX_LENGTH}
+              className={`w-full px-3.5 py-2.5 rounded-lg border bg-gray-50 dark:bg-gray-900 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none transition-colors ${
+                nameInvalid
+                  ? 'border-red-400 dark:border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500'
+                  : 'border-gray-300 dark:border-gray-700 focus:border-primary focus:ring-1 focus:ring-primary'
+              }`}
             />
+            {nameInvalid && <p className="mt-1.5 text-xs text-red-500">{NAME_RULE_MESSAGE}</p>}
           </div>
 
           <div>
@@ -84,8 +103,14 @@ export default function Signup() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="name@example.com"
               required
-              className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
+              maxLength={EMAIL_MAX_LENGTH}
+              className={`w-full px-3.5 py-2.5 rounded-lg border bg-gray-50 dark:bg-gray-900 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none transition-colors ${
+                emailInvalid
+                  ? 'border-red-400 dark:border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500'
+                  : 'border-gray-300 dark:border-gray-700 focus:border-primary focus:ring-1 focus:ring-primary'
+              }`}
             />
+            {emailInvalid && <p className="mt-1.5 text-xs text-red-500">{EMAIL_RULE_MESSAGE}</p>}
           </div>
 
           <div>
@@ -211,7 +236,7 @@ export default function Signup() {
 
           <button
             type="submit"
-            disabled={passwordInvalid || passwordMismatch}
+            disabled={hasInvalidField}
             className="w-full py-2.5 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary-hover transition-colors cursor-pointer mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             회원가입
