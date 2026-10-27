@@ -76,8 +76,8 @@ const getLastServerId = (messages: ChatMessage[]) =>
 // 504·네트워크 오류·타임아웃은 서버가 끝까지 처리해 저장했을 수 있어 "결과 불확실"로 본다
 const isUncertainStatus = (status?: number) => status === undefined || status === 504;
 
-// AI 응답은 최대 약 125초 (nginx 타임아웃 150초). 그 안에서 저장 여부를 주기적으로 확인
-const RESULT_CHECK_TIMEOUT_MS = 150_000;
+// 서버 최악 처리 시간 약 185초 (nginx 타임아웃 200초). 그 안에서 저장 여부를 주기적으로 확인
+const RESULT_CHECK_TIMEOUT_MS = 200_000;
 const RESULT_CHECK_INTERVAL_MS = 5_000;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -223,11 +223,18 @@ const useChatMessages = ({ onMessageSent }: UseChatMessagesOptions = {}) => {
         updateMessages(chatId, (prev) =>
           prev.map((m) => (m.id === userMessage.id ? { ...m, failure: finalFailure } : m)),
         );
-      } else if (status === 409) {
-        // 다른 탭 등에서 보낸 이전 전송이 진행 중: 메시지는 저장되지 않았으므로 제거 후 해당 채팅방 입력창으로 복원
+      } else if (status === 409 || status === 429) {
+        // 409: 다른 탭·기기에서 보낸 이전 전송이 진행 중 (사용자 단위), 429: 최근 2분 10회 초과
+        // 둘 다 서버에 저장되지 않은 확실한 거절이므로 메시지 제거 후 해당 채팅방 입력창으로 복원
         updateMessages(chatId, (prev) => prev.filter((m) => m.id !== userMessage.id));
         setDrafts((prev) => ({ ...prev, [chatId]: prev[chatId] || content }));
-        setNotice({ chatId, text: '이전 응답을 기다리는 중입니다. 잠시 후 다시 보내주세요.' });
+        setNotice({
+          chatId,
+          text:
+            status === 429
+              ? '메시지를 너무 자주 보냈습니다. 잠시 후 다시 시도해 주세요'
+              : '이전 응답을 기다리는 중입니다. 잠시 후 다시 보내주세요.',
+        });
       } else {
         const failure = toFailure(status);
         updateMessages(chatId, (prev) =>
