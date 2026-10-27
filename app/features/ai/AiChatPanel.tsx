@@ -14,13 +14,13 @@ const AI_MODELS = [
 ] as const;
 
 interface AiChatPanelProps {
-  chatId: string;
+  chatId: number;
   chatTitle: string;
   onClose: () => void;
   onBack?: () => void;
   selectedModelId?: string;
   onModelChange?: (modelId: string) => void;
-  onLastMessageUpdate?: (chatId: string, message: string) => void;
+  onLastMessageUpdate?: (chatId: number, message: string) => void;
 }
 
 const AiChatPanel = ({
@@ -32,7 +32,7 @@ const AiChatPanel = ({
   onModelChange,
   onLastMessageUpdate,
 }: AiChatPanelProps) => {
-  const [messagesByChat, setMessagesByChat] = useState<Record<string, ChatMessage[]>>({});
+  const [messagesByChat, setMessagesByChat] = useState<Record<number, ChatMessage[]>>({});
   const [input, setInput] = useState('');
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);

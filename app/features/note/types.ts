@@ -26,7 +26,7 @@ export interface Note {
 }
 
 export interface ChatRoom {
-  id: string;
+  id: number;
   title: string;
   createdAt: string;
   lastMessage?: string;
