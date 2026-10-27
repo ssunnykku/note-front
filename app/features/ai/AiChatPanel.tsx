@@ -1,4 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
+import Markdown from 'react-markdown';
+import type { Components } from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import Loading from '~/components/ui/Loading';
 import { MESSAGE_MAX_LENGTH } from '~/lib/api/chat';
 import type { ChatMessage, ChatMessagesStore } from './useChatMessages';
@@ -9,6 +12,24 @@ const AI_MODELS = [
 ] as const;
 
 const EMPTY_MESSAGES: ChatMessage[] = [];
+
+// 표·취소선·체크박스 등 GFM 문법 지원
+const REMARK_PLUGINS = [remarkGfm];
+
+// 답변 속 링크는 새 탭으로 열어 채팅 화면을 유지
+const MARKDOWN_COMPONENTS: Components = {
+  a: ({ href, children }) => (
+    <a href={href} target="_blank" rel="noopener noreferrer">
+      {children}
+    </a>
+  ),
+  // 넓은 표는 말풍선 안에서 가로 스크롤
+  table: ({ children }) => (
+    <div className="overflow-x-auto">
+      <table>{children}</table>
+    </div>
+  ),
+};
 
 interface AiChatPanelProps {
   chatId: number;
@@ -182,13 +203,22 @@ const AiChatPanel = ({
             className={`flex flex-col gap-1 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
           >
             <div
-              className={`max-w-[70%] rounded-lg px-4 py-2.5 text-sm ${
+              className={`max-w-[70%] min-w-0 rounded-lg px-4 py-2.5 text-sm break-words ${
                 msg.role === 'user'
-                  ? 'bg-accent text-white'
+                  ? 'bg-accent text-white whitespace-pre-wrap'
                   : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
               } ${msg.failure ? 'opacity-60' : ''}`}
             >
-              {msg.content}
+              {msg.role === 'ai' ? (
+                // AI 답변은 마크다운 렌더링 (react-markdown은 원본 HTML을 렌더링하지 않아 XSS 안전)
+                <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1.5 prose-headings:mt-3 prose-headings:mb-1.5 prose-ul:my-1.5 prose-ol:my-1.5 prose-li:my-0.5 prose-pre:my-2 prose-pre:overflow-x-auto">
+                  <Markdown remarkPlugins={REMARK_PLUGINS} components={MARKDOWN_COMPONENTS}>
+                    {msg.content}
+                  </Markdown>
+                </div>
+              ) : (
+                msg.content
+              )}
             </div>
             {msg.failure && (
               <div className="flex items-center gap-2 text-xs">
