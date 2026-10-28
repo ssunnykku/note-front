@@ -10,27 +10,22 @@ const DefaultLayout = () => {
   const breakpoint = useBreakpoint();
   const isMobile = breakpoint === 'mobile';
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [authChecked, setAuthChecked] = useState(false);
+  // localStorage는 클라이언트에서만 접근 가능
+  const hasToken = isClient && !!localStorage.getItem('accessToken');
 
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
+    if (isClient && !hasToken) {
       navigate('/login', { replace: true });
-    } else {
-      setAuthChecked(true);
     }
-  }, [navigate]);
+  }, [isClient, hasToken, navigate]);
 
-  if (!isClient || !authChecked) {
+  if (!hasToken) {
     return null;
   }
 
   return (
     <div className="flex h-screen flex-col">
-      <Header
-        showMenuButton={isMobile}
-        onMenuToggle={() => setSidebarOpen((prev) => !prev)}
-      />
+      <Header showMenuButton={isMobile} onMenuToggle={() => setSidebarOpen((prev) => !prev)} />
       <div className="flex flex-1 overflow-hidden">
         <Outlet context={{ isMobile, sidebarOpen, setSidebarOpen }} />
       </div>
