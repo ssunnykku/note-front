@@ -24,7 +24,8 @@ apiClient.interceptors.response.use(
     const status = error.response?.status;
     const url = error.config?.url;
 
-    if (status === 401) {
+    // 백엔드는 토큰 없음/만료를 403(본문 없음)으로 응답한다. 다른 이유의 403은 없음
+    if (status === 401 || status === 403) {
       clearAuth();
     } else {
       console.error(`[API Error] ${status ?? 'NETWORK'} ${url}`, error.response?.data);
