@@ -1,7 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { authApi } from '~/lib/api/auth';
-import { PASSWORD_MAX_LENGTH, PASSWORD_RULE_MESSAGE, isPasswordInvalid } from '~/lib/auth';
+import {
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_RULE_MESSAGE,
+  getTokenStatus,
+  isPasswordInvalid,
+} from '~/lib/auth';
 
 export function meta() {
   return [{ title: '로그인 - Note' }, { name: 'description', content: '로그인' }];
@@ -15,8 +20,8 @@ export default function Login() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
+    // 만료된 토큰도 레이아웃에서 refresh를 시도하므로 홈으로 보낸다
+    if (getTokenStatus() !== 'none') {
       navigate('/', { replace: true });
     }
   }, [navigate]);

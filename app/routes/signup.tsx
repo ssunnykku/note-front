@@ -8,6 +8,7 @@ import {
   NAME_RULE_MESSAGE,
   PASSWORD_MAX_LENGTH,
   PASSWORD_RULE_MESSAGE,
+  getTokenStatus,
   isEmailInvalid,
   isNameInvalid,
   isPasswordInvalid,
@@ -28,8 +29,7 @@ export default function Signup() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
+    if (getTokenStatus() !== 'none') {
       navigate('/', { replace: true });
     }
   }, [navigate]);

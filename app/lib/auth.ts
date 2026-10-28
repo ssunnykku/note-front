@@ -27,3 +27,22 @@ export const clearAuth = () => {
   localStorage.removeItem('accessToken');
   window.location.href = '/login';
 };
+
+// JWT payload의 exp(초)로 상태 확인. 해석할 수 없는 토큰은 지우고 'none'으로 본다
+// 'expired'는 refresh로 새 토큰을 받을 수 있으니 지우지 않는다
+export type TokenStatus = 'valid' | 'expired' | 'none';
+
+export const getTokenStatus = (): TokenStatus => {
+  if (typeof window === 'undefined') return 'none';
+  const token = localStorage.getItem('accessToken');
+  if (!token) return 'none';
+  try {
+    const payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const { exp } = JSON.parse(atob(payload)) as { exp?: number };
+    if (typeof exp !== 'number' || exp * 1000 > Date.now()) return 'valid';
+    return 'expired';
+  } catch {
+    localStorage.removeItem('accessToken');
+    return 'none';
+  }
+};
