@@ -181,12 +181,7 @@ const AiChatPanel = ({
         )}
         {!isLoading && !isLoadError && messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-500 gap-3">
-            <svg
-              className="w-12 h-12"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
+            <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -280,12 +275,7 @@ const AiChatPanel = ({
               viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 9l6 6 6-6"
-              />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 9l6 6 6-6" />
             </svg>
           </button>
 
@@ -317,9 +307,7 @@ const AiChatPanel = ({
                     <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                       {model.label}
                     </div>
-                    <div className="text-[11px] text-gray-400 dark:text-gray-500">
-                      {model.desc}
-                    </div>
+                    <div className="text-[11px] text-gray-400 dark:text-gray-500">{model.desc}</div>
                   </div>
                   {model.id === selectedModelId && (
                     <svg

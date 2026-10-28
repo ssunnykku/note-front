@@ -13,7 +13,6 @@ import { logError } from '~/lib/logError';
 import Palette from '~/lib/palette';
 import type { Note, Category, CategoryNoteItem, ChatRoom } from '~/features/note/types';
 
-
 interface LayoutContext {
   isMobile: boolean;
   sidebarOpen: boolean;
@@ -139,9 +138,7 @@ export default function Home() {
       });
 
       const updateNote = (note: CategoryNoteItem) =>
-        note.id === noteId
-          ? { ...note, title: updated.title, updatedAt: updated.updatedAt }
-          : note;
+        note.id === noteId ? { ...note, title: updated.title, updatedAt: updated.updatedAt } : note;
 
       setCategories((prev) =>
         prev.map((cat) => ({
@@ -152,7 +149,12 @@ export default function Home() {
       setUncategorizedNotes((prev) => prev.map(updateNote));
       setSelectedNote((prev) =>
         prev && prev.id === noteId
-          ? { ...prev, title: updated.title, updatedAt: updated.updatedAt, version: updated.version }
+          ? {
+              ...prev,
+              title: updated.title,
+              updatedAt: updated.updatedAt,
+              version: updated.version,
+            }
           : prev,
       );
       return updated.updatedAt;
@@ -260,8 +262,8 @@ export default function Home() {
             prev.map((cat) =>
               cat.id === trashNote.categoryId
                 ? { ...cat, notes: [restoredNote, ...cat.notes] }
-                : cat
-            )
+                : cat,
+            ),
           );
         } else {
           setUncategorizedNotes((prev) => [restoredNote, ...prev]);

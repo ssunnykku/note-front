@@ -190,7 +190,10 @@ const Sidebar = ({
 
   // 채팅 목록 최신순 정렬
   const sortedChatRooms = useMemo(
-    () => [...chatRooms].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    () =>
+      [...chatRooms].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      ),
     [chatRooms],
   );
 
@@ -224,9 +227,7 @@ const Sidebar = ({
           >
             <p
               className={`text-sm font-medium truncate pr-6 ${
-                isSelected
-                  ? 'text-gray-900 dark:text-white'
-                  : 'text-gray-700 dark:text-gray-300'
+                isSelected ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'
               }`}
             >
               {note.title}
@@ -412,12 +413,7 @@ const Sidebar = ({
                 disabled={isCreatingChat}
                 className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 border border-dashed border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 hover:border-gray-400 dark:hover:border-gray-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -542,12 +538,7 @@ const Sidebar = ({
                 onClick={onQuickMemo}
                 className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors"
               >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -731,7 +722,10 @@ const Sidebar = ({
                           )}
                         </div>
                         <div className="flex-1" />
-                        <div className="relative shrink-0" ref={openMenuCategoryId === category.id ? menuRef : undefined}>
+                        <div
+                          className="relative shrink-0"
+                          ref={openMenuCategoryId === category.id ? menuRef : undefined}
+                        >
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -756,46 +750,46 @@ const Sidebar = ({
                               <circle cx="12" cy="18" r="1.5" />
                             </svg>
                           </button>
-                            {openMenuCategoryId === category.id && (
-                              <div className="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50">
-                                {onAddNote && (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleAddNote(category.id);
-                                      setOpenMenuCategoryId(null);
-                                    }}
-                                    className="w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                  >
-                                    노트 추가
-                                  </button>
-                                )}
-                                {onRenameCategory && (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      startCategoryRename(category.id, category.categoryName);
-                                      setOpenMenuCategoryId(null);
-                                    }}
-                                    className="w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                  >
-                                    이름 변경
-                                  </button>
-                                )}
-                                {onDeleteCategory && (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setDeletingCategory(category);
-                                      setOpenMenuCategoryId(null);
-                                    }}
-                                    className="w-full text-left px-3 py-1.5 text-sm text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                  >
-                                    삭제
-                                  </button>
-                                )}
-                              </div>
-                            )}
+                          {openMenuCategoryId === category.id && (
+                            <div className="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50">
+                              {onAddNote && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleAddNote(category.id);
+                                    setOpenMenuCategoryId(null);
+                                  }}
+                                  className="w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                >
+                                  노트 추가
+                                </button>
+                              )}
+                              {onRenameCategory && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    startCategoryRename(category.id, category.categoryName);
+                                    setOpenMenuCategoryId(null);
+                                  }}
+                                  className="w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                >
+                                  이름 변경
+                                </button>
+                              )}
+                              {onDeleteCategory && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDeletingCategory(category);
+                                    setOpenMenuCategoryId(null);
+                                  }}
+                                  className="w-full text-left px-3 py-1.5 text-sm text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                >
+                                  삭제
+                                </button>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -875,9 +869,7 @@ const Sidebar = ({
                   </span>
                 </div>
                 {trashNoteCount > 0 && (
-                  <span className="text-xs text-gray-400 dark:text-gray-500">
-                    {trashNoteCount}
-                  </span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500">{trashNoteCount}</span>
                 )}
               </button>
             </div>
@@ -892,12 +884,7 @@ const Sidebar = ({
             onClick={() => setIsAddingCategory(true)}
             className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors"
           >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"

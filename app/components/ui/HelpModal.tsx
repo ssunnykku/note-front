@@ -103,9 +103,7 @@ const HelpTooltip = () => {
             </div>
 
             <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
-              <h4 className="text-xs font-semibold text-gray-900 dark:text-white mb-2">
-                💡 팁
-              </h4>
+              <h4 className="text-xs font-semibold text-gray-900 dark:text-white mb-2">💡 팁</h4>
               <div className="space-y-1.5 text-[10px] text-gray-600 dark:text-gray-400">
                 <p>🎨 **굵게**, *기울임*, ~~취소선~~ 마크다운 지원</p>
                 <p>📋 [링크](url) 형식으로 링크를 추가할 수 있어요</p>

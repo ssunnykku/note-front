@@ -64,9 +64,7 @@ const TrashNoteContent = ({
             )}
           </div>
         </div>
-        <div className="mt-2 text-xs text-gray-400 dark:text-gray-500">
-          삭제된 메모 (읽기 전용)
-        </div>
+        <div className="mt-2 text-xs text-gray-400 dark:text-gray-500">삭제된 메모 (읽기 전용)</div>
       </div>
 
       {/* 컨텐츠 영역 (읽기 전용) */}
