@@ -95,7 +95,12 @@ export default function Login() {
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
               >
                 {showPassword ? (
-                  <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg
+                    className="w-4.5 h-4.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -104,7 +109,12 @@ export default function Login() {
                     />
                   </svg>
                 ) : (
-                  <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg
+                    className="w-4.5 h-4.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -126,9 +136,7 @@ export default function Login() {
             )}
           </div>
 
-          {error && (
-            <p className="text-sm text-red-500">{error}</p>
-          )}
+          {error && <p className="text-sm text-red-500">{error}</p>}
 
           <button
             type="submit"

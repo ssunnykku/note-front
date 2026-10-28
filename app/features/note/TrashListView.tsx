@@ -10,7 +10,10 @@ interface TrashListViewProps {
 }
 
 const stripHtml = (html: string) => {
-  return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+  return html
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .trim();
 };
 
 const TrashListView = ({
@@ -103,18 +106,10 @@ const TrashListView = ({
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={() => onRestore(note.id)}
-                >
+                <Button variant="default" size="sm" onClick={() => onRestore(note.id)}>
                   복원
                 </Button>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={() => onPermanentDelete(note.id)}
-                >
+                <Button variant="danger" size="sm" onClick={() => onPermanentDelete(note.id)}>
                   영구 삭제
                 </Button>
               </div>

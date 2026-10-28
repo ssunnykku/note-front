@@ -33,34 +33,33 @@ const BlockEditor = ({ initialContent, onChange }: BlockEditorProps) => {
   }, [blocks, onChange]);
 
   const updateBlock = (id: string, content: string) => {
-    setBlocks((prev) =>
-      prev.map((block) => (block.id === id ? { ...block, content } : block)),
-    );
+    setBlocks((prev) => prev.map((block) => (block.id === id ? { ...block, content } : block)));
   };
 
   const setBlockEditing = (id: string, isEditing: boolean) => {
-    setBlocks((prev) =>
-      prev.map((block) => (block.id === id ? { ...block, isEditing } : block)),
-    );
+    setBlocks((prev) => prev.map((block) => (block.id === id ? { ...block, isEditing } : block)));
   };
 
   const blockIdCounter = useRef(0);
-  const addNewBlock = useCallback((afterId: string) => {
-    const index = blocks.findIndex((b) => b.id === afterId);
-    blockIdCounter.current += 1;
-    const newBlock: Block = {
-      id: `block-${blockIdCounter.current}-${performance.now()}`,
-      content: '',
-      isEditing: true,
-    };
-    const newBlocks = [...blocks];
-    newBlocks.splice(index + 1, 0, newBlock);
-    setBlocks(newBlocks);
+  const addNewBlock = useCallback(
+    (afterId: string) => {
+      const index = blocks.findIndex((b) => b.id === afterId);
+      blockIdCounter.current += 1;
+      const newBlock: Block = {
+        id: `block-${blockIdCounter.current}-${performance.now()}`,
+        content: '',
+        isEditing: true,
+      };
+      const newBlocks = [...blocks];
+      newBlocks.splice(index + 1, 0, newBlock);
+      setBlocks(newBlocks);
 
-    setTimeout(() => {
-      inputRefs.current[newBlock.id]?.focus();
-    }, 0);
-  }, [blocks]);
+      setTimeout(() => {
+        inputRefs.current[newBlock.id]?.focus();
+      }, 0);
+    },
+    [blocks],
+  );
 
   const mergeWithPreviousBlock = (id: string) => {
     const index = blocks.findIndex((b) => b.id === id);

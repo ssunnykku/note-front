@@ -36,9 +36,7 @@ const ToolbarButton = ({ onClick, isActive, title, children }: ToolbarButtonProp
   </button>
 );
 
-const ToolbarDivider = () => (
-  <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-1" />
-);
+const ToolbarDivider = () => <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-1" />;
 
 const TipTapEditor = ({ content, onChange, placeholder }: TipTapEditorProps) => {
   const editor = useEditor({
@@ -137,7 +135,12 @@ const TipTapEditor = ({ content, onChange, placeholder }: TipTapEditorProps) => 
           title="인라인 코드 (Ctrl+E)"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+            />
           </svg>
         </ToolbarButton>
 
@@ -150,7 +153,12 @@ const TipTapEditor = ({ content, onChange, placeholder }: TipTapEditorProps) => 
           title="글머리 기호 목록"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 6h16M4 12h16M4 18h16"
+            />
             <circle cx="1" cy="6" r="1" fill="currentColor" />
             <circle cx="1" cy="12" r="1" fill="currentColor" />
             <circle cx="1" cy="18" r="1" fill="currentColor" />
@@ -162,10 +170,21 @@ const TipTapEditor = ({ content, onChange, placeholder }: TipTapEditorProps) => 
           title="번호 매기기 목록"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 6h13M8 12h13M8 18h13" />
-            <text x="1" y="8" fontSize="8" fill="currentColor" fontWeight="bold">1</text>
-            <text x="1" y="14" fontSize="8" fill="currentColor" fontWeight="bold">2</text>
-            <text x="1" y="20" fontSize="8" fill="currentColor" fontWeight="bold">3</text>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M8 6h13M8 12h13M8 18h13"
+            />
+            <text x="1" y="8" fontSize="8" fill="currentColor" fontWeight="bold">
+              1
+            </text>
+            <text x="1" y="14" fontSize="8" fill="currentColor" fontWeight="bold">
+              2
+            </text>
+            <text x="1" y="20" fontSize="8" fill="currentColor" fontWeight="bold">
+              3
+            </text>
           </svg>
         </ToolbarButton>
 
@@ -178,7 +197,12 @@ const TipTapEditor = ({ content, onChange, placeholder }: TipTapEditorProps) => 
           title="인용문"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+            />
           </svg>
         </ToolbarButton>
         <ToolbarButton
@@ -187,7 +211,12 @@ const TipTapEditor = ({ content, onChange, placeholder }: TipTapEditorProps) => 
           title="코드 블록"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"
+            />
           </svg>
         </ToolbarButton>
         <ToolbarButton

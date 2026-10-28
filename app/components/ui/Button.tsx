@@ -3,8 +3,15 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   size?: 'sm' | 'md';
 }
 
-const Button = ({ variant = 'default', size = 'md', className = '', children, ...props }: ButtonProps) => {
-  const base = 'inline-flex items-center justify-center font-medium rounded-md border transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed';
+const Button = ({
+  variant = 'default',
+  size = 'md',
+  className = '',
+  children,
+  ...props
+}: ButtonProps) => {
+  const base =
+    'inline-flex items-center justify-center font-medium rounded-md border transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed';
 
   const sizes = {
     sm: 'px-3 py-1 text-xs',
@@ -14,8 +21,7 @@ const Button = ({ variant = 'default', size = 'md', className = '', children, ..
   const variants = {
     default:
       'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700',
-    primary:
-      'border-accent bg-accent text-white hover:bg-accent-hover',
+    primary: 'border-accent bg-accent text-white hover:bg-accent-hover',
     danger:
       'border-red-300 dark:border-red-700 bg-white dark:bg-gray-800 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20',
     ghost:
@@ -23,10 +29,7 @@ const Button = ({ variant = 'default', size = 'md', className = '', children, ..
   };
 
   return (
-    <button
-      className={`${base} ${sizes[size]} ${variants[variant]} ${className}`}
-      {...props}
-    >
+    <button className={`${base} ${sizes[size]} ${variants[variant]} ${className}`} {...props}>
       {children}
     </button>
   );

@@ -26,6 +26,5 @@ export const notesApi = {
 
   restore: (id: number) => apiClient.patch(`/notes/${id}/restore`).then((r) => r.data),
 
-  permanentDelete: (id: number) =>
-    apiClient.delete(`/notes/${id}/permanent`).then((r) => r.data),
+  permanentDelete: (id: number) => apiClient.delete(`/notes/${id}/permanent`).then((r) => r.data),
 };

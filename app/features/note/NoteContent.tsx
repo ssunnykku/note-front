@@ -222,7 +222,10 @@ const NoteContent = ({
             </span>
           ) : (
             <span className="text-gray-400 dark:text-gray-500">
-              자동 저장됨 {isClient && note.updatedAt ? `(${new Date(note.updatedAt).toLocaleTimeString()})` : ''}
+              자동 저장됨{' '}
+              {isClient && note.updatedAt
+                ? `(${new Date(note.updatedAt).toLocaleTimeString()})`
+                : ''}
             </span>
           )}
         </div>
