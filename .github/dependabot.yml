@@ -1,0 +1,27 @@
+version: 2
+
+updates:
+  # npm 패키지 (pnpm-lock.yaml 포함). minor/patch는 PR 하나로 묶어 알림을 줄인다
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: Asia/Seoul
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+    commit-message:
+      prefix: chore
+
+  # GitHub Actions 버전
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+      timezone: Asia/Seoul
+    commit-message:
+      prefix: chore
