@@ -4,9 +4,13 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  deploy:
+  # 타입/린트/포맷 검사. 실패하면 배포하지 않는다
+  check:
     runs-on: ubuntu-latest
 
     steps:
@@ -25,8 +29,44 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Format check
+        run: pnpm format:check
+
+  deploy:
+    needs: check
+    # PR에서는 검사만 하고 배포는 main push일 때만
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # pnpm build의 `|| rm -rf build/server`는 Windows 로컬 빌드 우회용이라 빌드 실패도 성공으로 끝난다.
+      # CI(Linux)에서는 react-router build를 직접 실행해 실패 시 배포를 멈춘다
       - name: Build
-        run: pnpm build
+        run: pnpm exec react-router build
+
+      - name: Verify build output
+        run: test -f build/client/index.html
 
       - name: Connect to Tailscale
         uses: tailscale/github-action@v2
