@@ -10,9 +10,9 @@ interface TrashListViewProps {
 }
 
 const stripHtml = (html: string) => {
-  return html
-    .replace(/<[^>]*>/g, '')
-    .replace(/&nbsp;/g, ' ')
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  return (doc.body.textContent ?? '')
+    .replace(/\u00a0|&nbsp;/g, ' ')
     .trim();
 };
 
