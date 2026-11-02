@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useOutletContext, useSearchParams } from 'react-router';
 import Sidebar from '~/features/note/Sidebar';
 import NoteContent from '~/features/note/NoteContent';
@@ -44,6 +44,15 @@ export default function Home() {
   const [mobileView, setMobileView] = useState<'list' | 'editor' | 'chat'>('list');
   const [trashNotes, setTrashNotes] = useState<CategoryNoteItem[]>([]);
   const [isTrashView, setIsTrashView] = useState(false);
+  // 저장 요청에 쓸 노트별 최신 version/categoryId. 저장 시점에 렌더 클로저의 state를 읽으면
+  // 진행 중인 저장·이동 결과가 반영되기 전 값이라 409나 카테고리 되돌림이 생긴다
+  const noteMetaRef = useRef(new Map<number, Pick<Note, 'version' | 'categoryId'>>());
+  // 같은 노트의 저장은 앞 요청이 끝난 뒤 보내야 올라간 version을 쓸 수 있다
+  const saveQueueRef = useRef(new Map<number, Promise<unknown>>());
+
+  const rememberNote = (note: Note) => {
+    noteMetaRef.current.set(note.id, { version: note.version, categoryId: note.categoryId });
+  };
 
   useEffect(() => {
     categoriesApi
@@ -93,7 +102,10 @@ export default function Home() {
     if (selectedId === null) return;
     notesApi
       .getById(selectedId)
-      .then(setSelectedNote)
+      .then((note) => {
+        rememberNote(note);
+        setSelectedNote(note);
+      })
       .catch(() => setSelectedNote(null));
   }, [selectedId]);
 
@@ -122,20 +134,16 @@ export default function Home() {
 
   const selectedChat = chatRooms.find((c) => c.id === selectedChatId) ?? null;
 
-  const handleSaveNote = async (
-    noteId: number,
-    title: string,
-    content: string,
-  ): Promise<string | void> => {
+  const saveNote = async (noteId: number, title: string, content: string): Promise<string> => {
     try {
-      const categoryId = categories.find((cat) => cat.notes.some((n) => n.id === noteId))?.id;
-      const version = selectedNote?.id === noteId ? selectedNote.version : 0;
+      const meta = noteMetaRef.current.get(noteId);
       const updated = await notesApi.update(noteId, {
         title,
         content,
-        categoryId,
-        version,
+        categoryId: meta?.categoryId,
+        version: meta?.version ?? 0,
       });
+      rememberNote(updated);
 
       const updateNote = (note: CategoryNoteItem) =>
         note.id === noteId ? { ...note, title: updated.title, updatedAt: updated.updatedAt } : note;
@@ -165,9 +173,17 @@ export default function Home() {
     }
   };
 
+  const handleSaveNote = (noteId: number, title: string, content: string) => {
+    const prev = saveQueueRef.current.get(noteId) ?? Promise.resolve();
+    const task = prev.catch(() => {}).then(() => saveNote(noteId, title, content));
+    saveQueueRef.current.set(noteId, task);
+    return task;
+  };
+
   // 다른 곳에서 수정돼 저장이 충돌했을 때 서버의 최신 노트로 교체
   const handleReloadNote = async (noteId: number) => {
     const latest = await notesApi.getById(noteId);
+    rememberNote(latest);
     const updateNote = (note: CategoryNoteItem) =>
       note.id === noteId ? { ...note, title: latest.title, updatedAt: latest.updatedAt } : note;
     setCategories((prev) => prev.map((cat) => ({ ...cat, notes: cat.notes.map(updateNote) })));
@@ -196,6 +212,7 @@ export default function Home() {
       );
       setSelectedId(created.id);
       setIsTrashView(false);
+      rememberNote(created);
       setSelectedNote(created);
       if (isMobile) setMobileView('editor');
     } catch (err) {
@@ -219,6 +236,7 @@ export default function Home() {
       setUncategorizedNotes((prev) => [noteItem, ...prev]);
       setSelectedId(created.id);
       setIsTrashView(false);
+      rememberNote(created);
       setSelectedNote(created);
       if (isMobile) setMobileView('editor');
     } catch (err) {
@@ -363,12 +381,18 @@ export default function Home() {
     try {
       // 노트 상세 정보를 먼저 가져와서 필수 필드 포함
       const noteDetail = await notesApi.getById(noteId);
-      await notesApi.update(noteId, {
+      const moved = await notesApi.update(noteId, {
         title: noteDetail.title,
         content: noteDetail.content,
         categoryId,
         version: noteDetail.version,
       });
+      rememberNote(moved);
+      setSelectedNote((prev) =>
+        prev && prev.id === noteId
+          ? { ...prev, categoryId: moved.categoryId, version: moved.version }
+          : prev,
+      );
 
       let movedNote: CategoryNoteItem | undefined;
 
