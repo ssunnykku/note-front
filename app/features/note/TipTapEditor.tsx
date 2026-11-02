@@ -70,7 +70,8 @@ const TipTapEditor = ({ content, onChange, placeholder }: TipTapEditorProps) => 
 
   useEffect(() => {
     if (editor && content !== editor.getHTML()) {
-      editor.commands.setContent(content);
+      // 외부에서 내용을 넣을 때 onUpdate가 불리면 열기만 해도 자동저장이 돌아 버전이 올라간다
+      editor.commands.setContent(content, { emitUpdate: false });
     }
   }, [content, editor]);
 

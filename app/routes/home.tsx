@@ -160,7 +160,19 @@ export default function Home() {
       return updated.updatedAt;
     } catch (err) {
       logError('노트 저장 실패', err);
+      // 실패를 NoteContent에 알려야 "저장됨"으로 표시되지 않는다
+      throw err;
     }
+  };
+
+  // 다른 곳에서 수정돼 저장이 충돌했을 때 서버의 최신 노트로 교체
+  const handleReloadNote = async (noteId: number) => {
+    const latest = await notesApi.getById(noteId);
+    const updateNote = (note: CategoryNoteItem) =>
+      note.id === noteId ? { ...note, title: latest.title, updatedAt: latest.updatedAt } : note;
+    setCategories((prev) => prev.map((cat) => ({ ...cat, notes: cat.notes.map(updateNote) })));
+    setUncategorizedNotes((prev) => prev.map(updateNote));
+    setSelectedNote((prev) => (prev && prev.id === noteId ? latest : prev));
   };
 
   const handleAddNote = async (categoryId: number) => {
@@ -519,6 +531,7 @@ export default function Home() {
       <NoteContent
         note={selectedNote}
         onSave={handleSaveNote}
+        onReload={handleReloadNote}
         onDelete={handleDeleteNote}
         onBack={onBack}
         categoryName={noteCategory?.categoryName}
