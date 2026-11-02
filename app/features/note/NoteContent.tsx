@@ -51,10 +51,13 @@ const NoteContent = ({
   const onSaveRef = useRef(onSave);
   const titleRef = useRef(title);
   const contentRef = useRef(content);
-  noteRef.current = note;
-  onSaveRef.current = onSave;
-  titleRef.current = title;
-  contentRef.current = content;
+  // 렌더 중 ref 쓰기는 금지라 effect에서 동기화. 아래 effect들보다 먼저 선언해 먼저 실행되게 한다
+  useEffect(() => {
+    noteRef.current = note;
+    onSaveRef.current = onSave;
+    titleRef.current = title;
+    contentRef.current = content;
+  });
 
   useEffect(() => {
     if (!note) return;
