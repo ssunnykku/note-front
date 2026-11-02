@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import type { ComponentType } from 'react';
+import { isAxiosError } from 'axios';
 import { marked } from 'marked';
 import type { Note } from './types';
 import useIsClient from '~/hooks/useIsClient';
@@ -8,6 +9,7 @@ import { logError } from '~/lib/logError';
 interface NoteContentProps {
   note: Note | null;
   onSave?: (noteId: number, title: string, content: string) => Promise<string | void>;
+  onReload?: (noteId: number) => Promise<void>;
   onDelete?: (noteId: number) => void;
   onBack?: () => void;
   categoryName?: string | null;
@@ -17,6 +19,7 @@ interface NoteContentProps {
 const NoteContent = ({
   note,
   onSave,
+  onReload,
   onDelete,
   onBack,
   categoryName,
@@ -26,6 +29,9 @@ const NoteContent = ({
   const [content, setContent] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  // conflict: 다른 곳에서 먼저 수정돼 버전 충돌(409). 최신 내용을 불러오기 전까지 자동저장을 멈춘다
+  const [saveError, setSaveError] = useState<'conflict' | 'failed' | null>(null);
+  const [isReloading, setIsReloading] = useState(false);
   const initialTitleRef = useRef('');
   const initialContentRef = useRef('');
   const isClient = useIsClient();
@@ -51,12 +57,14 @@ const NoteContent = ({
   const onSaveRef = useRef(onSave);
   const titleRef = useRef(title);
   const contentRef = useRef(content);
+  const saveErrorRef = useRef(saveError);
   // 렌더 중 ref 쓰기는 금지라 effect에서 동기화. 아래 effect들보다 먼저 선언해 먼저 실행되게 한다
   useEffect(() => {
     noteRef.current = note;
     onSaveRef.current = onSave;
     titleRef.current = title;
     contentRef.current = content;
+    saveErrorRef.current = saveError;
   });
 
   useEffect(() => {
@@ -90,6 +98,7 @@ const NoteContent = ({
     initialTitleRef.current = note.title;
     initialContentRef.current = htmlContent;
     setLastSaved(null);
+    setSaveError(null);
     // 로드된 노트 ID를 기록하여 자동저장 방지
     loadedNoteIdRef.current = note.id;
   }, [note]);
@@ -98,7 +107,7 @@ const NoteContent = ({
   useEffect(() => {
     const currentNote = noteRef.current;
     const currentOnSave = onSaveRef.current;
-    if (!currentNote || !currentOnSave) return;
+    if (!currentNote || !currentOnSave || saveErrorRef.current === 'conflict') return;
 
     // 노트 로드 직후에는 저장하지 않음
     if (loadedNoteIdRef.current !== null) {
@@ -122,8 +131,10 @@ const NoteContent = ({
       try {
         const serverUpdatedAt = await currentOnSave(currentNote.id, title, content);
         setLastSaved(serverUpdatedAt ? new Date(serverUpdatedAt) : new Date());
+        setSaveError(null);
       } catch (err) {
         logError('자동 저장 실패', err);
+        setSaveError(isAxiosError(err) && err.response?.status === 409 ? 'conflict' : 'failed');
       } finally {
         setIsSaving(false);
       }
@@ -136,6 +147,21 @@ const NoteContent = ({
       }
     };
   }, [content, title]);
+
+  // 서버의 최신 노트로 교체. 같은 id라도 새 노트로 로드되도록 이전 id 기록을 지운다
+  const handleReload = async () => {
+    if (!note || !onReload) return;
+    setIsReloading(true);
+    prevNoteIdRef.current = null;
+    try {
+      await onReload(note.id);
+    } catch (err) {
+      prevNoteIdRef.current = note.id;
+      logError('최신 노트 불러오기 실패', err);
+    } finally {
+      setIsReloading(false);
+    }
+  };
 
   const handleContentChange = (newContent: string) => {
     setContent(newContent);
@@ -219,6 +245,24 @@ const NoteContent = ({
           <span className="text-gray-300 dark:text-gray-700">•</span>
           {isSaving ? (
             <span className="text-gray-500 dark:text-gray-400">저장 중...</span>
+          ) : saveError === 'conflict' ? (
+            <span role="alert" className="flex items-center gap-2 text-red-500">
+              다른 곳에서 수정되어 저장하지 못했습니다
+              {onReload && (
+                <button
+                  type="button"
+                  onClick={handleReload}
+                  disabled={isReloading}
+                  className="underline hover:text-red-600 disabled:opacity-50 cursor-pointer"
+                >
+                  {isReloading ? '불러오는 중...' : '최신 내용 불러오기'}
+                </button>
+              )}
+            </span>
+          ) : saveError === 'failed' ? (
+            <span role="alert" className="text-red-500">
+              저장하지 못했습니다. 계속 입력하면 다시 저장합니다
+            </span>
           ) : lastSaved ? (
             <span className="text-gray-600 dark:text-gray-300">
               자동 저장됨 ({lastSaved.toLocaleTimeString()})
