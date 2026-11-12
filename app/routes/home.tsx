@@ -394,25 +394,23 @@ export default function Home() {
           : prev,
       );
 
-      let movedNote: CategoryNoteItem | undefined;
+      // 옮길 노트는 서버 응답으로 만든다. updater 안에서 찾은 값을 다른 updater에 넘기면
+      // React가 categories updater를 먼저 실행해 미분류 노트가 어디에도 추가되지 않는다
+      const movedNote: CategoryNoteItem = {
+        id: moved.id,
+        categoryId: moved.categoryId,
+        title: moved.title,
+        createdAt: moved.createdAt,
+        updatedAt: moved.updatedAt,
+      };
 
-      // 미분류에서 찾기
-      setUncategorizedNotes((prev) => {
-        const found = prev.find((n) => n.id === noteId);
-        if (found) movedNote = found;
-        return prev.filter((n) => n.id !== noteId);
-      });
-
-      // 다른 카테고리에서 찾기 & 제거 + 대상 카테고리에 추가
+      setUncategorizedNotes((prev) => prev.filter((n) => n.id !== noteId));
       setCategories((prev) =>
         prev.map((cat) => {
-          const found = cat.notes.find((n) => n.id === noteId);
-          if (found) movedNote = found;
           const filtered = cat.notes.filter((n) => n.id !== noteId);
-          if (cat.id === categoryId && movedNote) {
-            return { ...cat, notes: [movedNote, ...filtered] };
-          }
-          return { ...cat, notes: filtered };
+          return cat.id === categoryId
+            ? { ...cat, notes: [movedNote, ...filtered] }
+            : { ...cat, notes: filtered };
         }),
       );
     } catch (err) {
