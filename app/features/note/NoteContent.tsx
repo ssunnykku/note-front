@@ -238,7 +238,7 @@ const NoteContent = ({
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="flex-1 text-2xl font-bold bg-transparent border-none outline-none text-gray-900 dark:text-white placeholder:text-gray-400"
+          className="w-full text-2xl font-bold bg-transparent border-none outline-none text-gray-900 dark:text-white placeholder:text-gray-400"
           placeholder="제목 없음"
         />
         <div className="flex items-center gap-2 mt-2 text-xs">
