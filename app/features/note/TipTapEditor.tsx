@@ -8,6 +8,7 @@ import { marked } from 'marked';
 import { useEffect, useRef } from 'react';
 import type { Editor } from '@tiptap/react';
 import MarkdownOnEnter, { MARKDOWN_PATTERN } from './markdownOnEnter';
+import CopyMarkdownButton from './CopyMarkdownButton';
 import './tiptap.css';
 
 const lowlight = createLowlight(common);
@@ -252,8 +253,11 @@ const TipTapEditor = ({ content, onChange, placeholder }: TipTapEditorProps) => 
       </div>
 
       {/* 에디터 */}
-      <div className="flex-1 overflow-y-auto">
-        <EditorContent editor={editor} />
+      <div className="relative flex-1 overflow-hidden">
+        <div className="h-full overflow-y-auto">
+          <EditorContent editor={editor} />
+        </div>
+        <CopyMarkdownButton getHtml={() => editor.getHTML()} />
       </div>
     </div>
   );
