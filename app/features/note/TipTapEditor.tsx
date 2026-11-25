@@ -3,7 +3,10 @@ import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import { common, createLowlight } from 'lowlight';
-import { useEffect } from 'react';
+import { marked } from 'marked';
+import { useEffect, useRef } from 'react';
+import type { Editor } from '@tiptap/react';
+import MarkdownOnEnter, { MARKDOWN_PATTERN } from './markdownOnEnter';
 import './tiptap.css';
 
 const lowlight = createLowlight(common);
@@ -39,6 +42,8 @@ const ToolbarButton = ({ onClick, isActive, title, children }: ToolbarButtonProp
 const ToolbarDivider = () => <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-1" />;
 
 const TipTapEditor = ({ content, onChange, placeholder }: TipTapEditorProps) => {
+  const editorRef = useRef<Editor | null>(null);
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -51,6 +56,7 @@ const TipTapEditor = ({ content, onChange, placeholder }: TipTapEditorProps) => 
         lowlight,
         defaultLanguage: 'plaintext',
       }),
+      MarkdownOnEnter,
       Placeholder.configure({
         placeholder: placeholder || "입력하세요. '/' 로 명령어를 사용할 수 있습니다.",
       }),
@@ -61,6 +67,19 @@ const TipTapEditor = ({ content, onChange, placeholder }: TipTapEditorProps) => 
         class:
           'tiptap prose dark:prose-invert prose-sm max-w-none focus:outline-none min-h-[500px] px-8 py-5',
       },
+      handlePaste: (_view, event) => {
+        const current = editorRef.current;
+        const text = event.clipboardData?.getData('text/plain');
+        if (!current || !text || current.isActive('codeBlock')) return false;
+        // VS Code 등은 마크다운 원문을 서식 없는 HTML로도 함께 넣으므로 HTML 유무로는 판단하지 않는다
+        if (!MARKDOWN_PATTERN.test(text)) return false;
+        const html = marked.parse(text, { async: false });
+        current.commands.insertContent(html);
+        return true;
+      },
+    },
+    onCreate: ({ editor }) => {
+      editorRef.current = editor;
     },
     onUpdate: ({ editor }) => {
       const html = editor.getHTML();
