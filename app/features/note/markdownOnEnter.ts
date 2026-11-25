@@ -4,13 +4,15 @@ import { marked } from 'marked';
 
 type Doc = Editor['state']['doc'];
 
-// 줄 시작 문법(제목·목록·인용·코드펜스·구분선) 또는 줄 안 문법(굵게·링크·인라인 코드)
+// 줄 시작 문법(제목·목록·인용·코드펜스·구분선·표 구분줄) 또는 줄 안 문법(굵게·링크·인라인 코드)
 export const MARKDOWN_PATTERN =
-  /^(#{1,6}\s|\s*[-*+]\s|\s*\d+\.\s|>\s|```|(-{3,}|\*{3,})\s*$)|\*\*[^*\n]+\*\*|\[[^\]\n]+\]\([^)\n]+\)|`[^`\n]+`/m;
+  /^(#{1,6}\s|\s*[-*+]\s|\s*\d+\.\s|>\s|```|(-{3,}|\*{3,})\s*$|\s*\|(\s*:?-+:?\s*\|)+\s*$)|\*\*[^*\n]+\*\*|\[[^\]\n]+\]\([^)\n]+\)|`[^`\n]+`/m;
 
 const FENCE = /^```/;
 const LIST_LINE = /^\s*([-*+]|\d+\.)\s/;
 const QUOTE_LINE = /^>\s?/;
+const TABLE_LINE = /^\s*\|.*\|\s*$/;
+const TABLE_SEPARATOR = /^\s*\|(\s*:?-+:?\s*\|)+\s*$/;
 
 const textAt = (doc: Doc, index: number) => {
   if (index < 0 || index >= doc.childCount) return null;
@@ -22,6 +24,7 @@ const lineKind = (text: string | null) => {
   if (text === null) return null;
   if (LIST_LINE.test(text)) return 'list';
   if (QUOTE_LINE.test(text)) return 'quote';
+  if (TABLE_LINE.test(text)) return 'table';
   return null;
 };
 
@@ -52,6 +55,8 @@ const findMarkdownRange = (doc: Doc, index: number) => {
     let end = index;
     while (lineKind(textAt(doc, start - 1)) === kind) start -= 1;
     while (lineKind(textAt(doc, end + 1)) === kind) end += 1;
+    // 머리줄만 있을 때 바꾸면 Enter가 줄을 나누지 못하므로 구분줄이 생긴 뒤에만 표로 바꾼다
+    if (kind === 'table' && !TABLE_SEPARATOR.test(textAt(doc, start + 1) ?? '')) return null;
     return { start, end };
   }
 

@@ -2,6 +2,7 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
+import { TableKit } from '@tiptap/extension-table';
 import { common, createLowlight } from 'lowlight';
 import { marked } from 'marked';
 import { useEffect, useRef } from 'react';
@@ -56,6 +57,7 @@ const TipTapEditor = ({ content, onChange, placeholder }: TipTapEditorProps) => 
         lowlight,
         defaultLanguage: 'plaintext',
       }),
+      TableKit,
       MarkdownOnEnter,
       Placeholder.configure({
         placeholder: placeholder || "입력하세요. '/' 로 명령어를 사용할 수 있습니다.",
